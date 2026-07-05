@@ -11,7 +11,7 @@ ENV=${1:-dev}
 case "$ENV" in
   dev)
     echo "🚀 Starting development environment..."
-    docker-compose up -d postgres
+    docker compose up -d postgres
     echo "✅ PostgreSQL started on port 5432"
     echo ""
     echo "To start backend: cd backend && ./gradlew bootRun"
@@ -23,11 +23,11 @@ case "$ENV" in
 
     # Build images
     echo "📦 Building Docker images..."
-    docker-compose build --no-cache
+    docker compose build --no-cache
 
     # Start services
     echo "🎬 Starting services..."
-    docker-compose up -d
+    docker compose up -d
 
     # Wait for services to be healthy
     echo "⏳ Waiting for services to be ready..."
@@ -36,7 +36,7 @@ case "$ENV" in
     # Check health
     echo "🏥 Checking service health..."
 
-    if docker-compose ps | grep -q "healthy"; then
+    if docker compose ps | grep -q "healthy"; then
       echo "✅ Services are healthy!"
       echo ""
       echo "🌐 Application is running at:"
@@ -48,23 +48,23 @@ case "$ENV" in
       echo "🛑 Stop:      ./deploy.sh stop"
     else
       echo "❌ Some services are unhealthy. Check logs:"
-      docker-compose logs --tail=50
+      docker compose logs --tail=50
       exit 1
     fi
     ;;
 
   stop)
     echo "🛑 Stopping all services..."
-    docker-compose down
+    docker compose down
     echo "✅ All services stopped"
     ;;
 
   logs)
     SERVICE=${2:-}
     if [ -z "$SERVICE" ]; then
-      docker-compose logs -f
+      docker compose logs -f
     else
-      docker-compose logs -f "$SERVICE"
+      docker compose logs -f "$SERVICE"
     fi
     ;;
 
@@ -88,7 +88,7 @@ case "$ENV" in
 
   clean)
     echo "🧹 Cleaning up Docker resources..."
-    docker-compose down -v
+    docker compose down -v
     docker system prune -f
     echo "✅ Cleanup complete"
     ;;
