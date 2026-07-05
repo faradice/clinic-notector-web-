@@ -1,4 +1,4 @@
-import { Song, SongChordPosition } from '../../api/songs';
+import type { Song, SongChordPosition } from '../../api/songs';
 
 interface LyricsDisplayProps {
   song: Song;
