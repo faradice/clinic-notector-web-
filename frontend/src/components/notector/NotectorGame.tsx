@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { MusicStaff } from './MusicStaff';
 import { usePitchDetection } from '../../hooks/usePitchDetection';
 import { useMetronome } from '../../hooks/useMetronome';
-import { gameApi, GameScore } from '../../api/game';
+import type { GameScore } from '../../api/game';
+import { gameApi } from '../../api/game';
 
 const AVAILABLE_NOTES = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5'];
 
