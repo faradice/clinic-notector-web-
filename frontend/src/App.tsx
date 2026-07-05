@@ -4,6 +4,7 @@ import { songApi, Song } from './api/songs';
 import { FretboardViewer } from './components/chord-editor/FretboardViewer';
 import { ComposerCanvas } from './components/composer/ComposerCanvas';
 import { PlayerViewer } from './components/player/PlayerViewer';
+import { NotectorGame } from './components/notector/NotectorGame';
 
 const queryClient = new QueryClient();
 
@@ -100,7 +101,7 @@ function SongList() {
 }
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'player' | 'composer' | 'chords' | 'songs'>('player');
+  const [activeTab, setActiveTab] = useState<'player' | 'composer' | 'chords' | 'notector' | 'songs'>('player');
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -139,6 +140,16 @@ function App() {
                 Chord Editor
               </button>
               <button
+                onClick={() => setActiveTab('notector')}
+                className={`pb-2 px-1 font-semibold transition-colors border-b-2 ${
+                  activeTab === 'notector'
+                    ? 'text-blue-600 border-blue-600'
+                    : 'text-gray-500 border-transparent hover:text-gray-700'
+                }`}
+              >
+                Notector
+              </button>
+              <button
                 onClick={() => setActiveTab('songs')}
                 className={`pb-2 px-1 font-semibold transition-colors border-b-2 ${
                   activeTab === 'songs'
@@ -152,10 +163,11 @@ function App() {
           </div>
         </div>
 
-        <div className={activeTab === 'composer' || activeTab === 'player' ? '' : 'py-8'}>
+        <div className={activeTab === 'composer' || activeTab === 'player' || activeTab === 'notector' ? '' : 'py-8'}>
           {activeTab === 'player' && <PlayerViewer />}
           {activeTab === 'composer' && <ComposerCanvas />}
           {activeTab === 'chords' && <FretboardViewer />}
+          {activeTab === 'notector' && <NotectorGame />}
           {activeTab === 'songs' && <SongList />}
         </div>
       </div>
