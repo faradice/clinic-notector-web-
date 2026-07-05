@@ -1,6 +1,6 @@
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Chord } from '../../api/chords';
+import type { Chord } from '../../api/chords';
 import { MiniChordViewer } from './MiniChordViewer';
 import { useChordPlayer } from '../../hooks/useChordPlayer';
 
