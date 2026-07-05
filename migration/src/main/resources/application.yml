@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: clinic-notector-migration
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/clinic_notector
+    username: clinic_user
+    password: clinic_pass
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+migration:
+  source-directory: ${SOURCE_DIR:/Users/ragnarvaldimarsson/Clinic_Notector_Music/guitar}
+  encoding: ISO-8859-1
+  skip-duplicates: true
