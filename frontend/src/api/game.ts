@@ -1,6 +1,6 @@
 import { apiClient } from './config';
 
-export interface GameScore {
+export type GameScore = {
   id?: number;
   playerName?: string;
   score: number;
@@ -9,7 +9,7 @@ export interface GameScore {
   bpm: number;
   repetitions: number;
   playedAt?: string;
-}
+};
 
 export const gameApi = {
   getAllScores: async (): Promise<GameScore[]> => {
@@ -35,4 +35,4 @@ export const gameApi = {
   deleteScore: async (id: number): Promise<void> => {
     await apiClient.delete(`/game/scores/${id}`);
   },
-};
+};;

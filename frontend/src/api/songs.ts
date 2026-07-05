@@ -1,14 +1,14 @@
 import { apiClient } from './config';
 
-export interface SongChordPosition {
+export type SongChordPosition = {
   id?: number;
   lineNumber: number;
   wordNumber: number;
   chordName: string;
   charOffset: number;
-}
+};
 
-export interface Song {
+export type Song = {
   id?: number;
   name: string;
   lyrics?: string;
@@ -22,7 +22,7 @@ export interface Song {
   chordPositions?: SongChordPosition[];
   createdAt?: string;
   updatedAt?: string;
-}
+};
 
 export const songApi = {
   getAll: async (): Promise<Song[]> => {
@@ -53,4 +53,4 @@ export const songApi = {
   delete: async (id: number): Promise<void> => {
     await apiClient.delete(`/songs/${id}`);
   },
-};
+};;

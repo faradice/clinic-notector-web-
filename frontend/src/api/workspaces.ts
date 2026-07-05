@@ -1,38 +1,38 @@
 import { apiClient } from './config';
 
-export interface WorkspaceCard {
+export type WorkspaceCard = {
   id?: number;
   chordId: number;
   chordName: string;
   positionX: number;
   positionY: number;
-}
+};
 
-export interface Workspace {
+export type Workspace = {
   id?: number;
   name: string;
   description?: string;
   cards: WorkspaceCard[];
   createdAt?: string;
   updatedAt?: string;
-}
+};
 
-export interface AddCardRequest {
+export type AddCardRequest = {
   chordId: number;
   positionX: number;
   positionY: number;
-}
+};
 
-export interface UpdatePositionRequest {
+export type UpdatePositionRequest = {
   positionX: number;
   positionY: number;
-}
+};
 
-export interface CardPositionUpdate {
+export type CardPositionUpdate = {
   cardId: number;
   positionX: number;
   positionY: number;
-}
+};
 
 export const workspaceApi = {
   getAll: async (): Promise<Workspace[]> => {

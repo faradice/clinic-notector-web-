@@ -6,7 +6,7 @@ export type ChordFretPosition = {
   fretNumber: number;
   finger?: number;
   isBase?: boolean;
-};
+};;
 
 export type Chord = {
   id?: number;
@@ -16,17 +16,17 @@ export type Chord = {
   fretPositions: ChordFretPosition[];
   createdAt?: string;
   updatedAt?: string;
+};;
+
+export type ChordAnalysisRequest = {
+  fretPositions: ChordFretPosition[];
 };
 
-export interface ChordAnalysisRequest {
-  fretPositions: ChordFretPosition[];
-}
-
-export interface ChordAnalysisResponse {
+export type ChordAnalysisResponse = {
   name: string;
   rootNote: string;
   chordType: string;
-}
+};
 
 export const chordApi = {
   getAll: async (): Promise<Chord[]> => {
@@ -64,4 +64,4 @@ export const chordApi = {
     });
     return response.data;
   },
-};
+};;

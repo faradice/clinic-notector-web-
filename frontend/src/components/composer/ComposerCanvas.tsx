@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DndContext, DragEndEvent, DragOverlay, MouseSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { Chord, chordApi } from '../../api/chords';
-import { Workspace, WorkspaceCard, workspaceApi, CardPositionUpdate } from '../../api/workspaces';
+import type { Workspace, WorkspaceCard, CardPositionUpdate } from '../../api/workspaces';
+import { workspaceApi } from '../../api/workspaces';
 import { ChordCard } from './ChordCard';
 import { MiniChordViewer } from './MiniChordViewer';
 
