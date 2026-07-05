@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
-import { songApi, Song } from './api/songs';
+import type { Song } from './api/songs';
+import { songApi } from './api/songs';
 import { FretboardViewer } from './components/chord-editor/FretboardViewer';
 import { ComposerCanvas } from './components/composer/ComposerCanvas';
 import { PlayerViewer } from './components/player/PlayerViewer';

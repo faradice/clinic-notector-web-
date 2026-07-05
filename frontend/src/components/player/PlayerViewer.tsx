@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Song, songApi } from '../../api/songs';
+import type { Song } from '../../api/songs';
+import { songApi } from '../../api/songs';
 import { LyricsDisplay } from './LyricsDisplay';
 import { useAutoScroll } from '../../hooks/useAutoScroll';
 import { useMetronome } from '../../hooks/useMetronome';
