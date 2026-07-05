@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
-import { ChordFretPosition, chordApi } from '../../api/chords';
+import type { ChordFretPosition } from '../../api/chords';
+import { chordApi } from '../../api/chords';
 import { useChordPlayer } from '../../hooks/useChordPlayer';
 
 const NUM_STRINGS = 6;

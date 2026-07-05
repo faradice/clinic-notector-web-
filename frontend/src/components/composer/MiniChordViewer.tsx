@@ -1,4 +1,4 @@
-import { ChordFretPosition } from '../../api/chords';
+import type { ChordFretPosition } from '../../api/chords';
 
 const NUM_STRINGS = 6;
 const NUM_FRETS = 5;
