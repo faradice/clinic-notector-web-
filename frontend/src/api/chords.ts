@@ -1,14 +1,14 @@
 import { apiClient } from './config';
 
-export interface ChordFretPosition {
+export type ChordFretPosition = {
   id?: number;
   stringNumber: number;
   fretNumber: number;
   finger?: number;
   isBase?: boolean;
-}
+};
 
-export interface Chord {
+export type Chord = {
   id?: number;
   name: string;
   rootNote: string;
@@ -16,7 +16,7 @@ export interface Chord {
   fretPositions: ChordFretPosition[];
   createdAt?: string;
   updatedAt?: string;
-}
+};
 
 export interface ChordAnalysisRequest {
   fretPositions: ChordFretPosition[];
