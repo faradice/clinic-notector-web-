@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import * as Tone from 'tone';
-import { ChordFretPosition } from '../api/chords';
+import type { ChordFretPosition } from '../api/chords';
 
 // Standard guitar tuning (low E to high E)
 const STANDARD_TUNING = ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'];
