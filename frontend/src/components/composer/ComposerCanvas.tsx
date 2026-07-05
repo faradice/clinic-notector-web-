@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { DndContext, DragEndEvent, DragOverlay, MouseSensor, useSensor, useSensors } from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { DndContext, DragOverlay, MouseSensor, useSensor, useSensors } from '@dnd-kit/core';
 import type { Chord } from '../../api/chords';
 import { chordApi } from '../../api/chords';
 import type { Workspace, WorkspaceCard, CardPositionUpdate } from '../../api/workspaces';
