@@ -5,49 +5,6 @@ import { useMetronome } from '../../hooks/useMetronome';
 // Basic notes for highest 3 guitar strings practice
 const BASIC_NOTES = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4'];
 
-// Difficulty levels
-type DifficultyLevel = 'beginner' | 'elementary' | 'intermediate' | 'advanced' | 'expert';
-
-interface LevelConfig {
-  name: string;
-  description: string;
-  noteCount: number;
-  repeatUntilPerfect: boolean;
-}
-
-const LEVELS: Record<DifficultyLevel, LevelConfig> = {
-  beginner: {
-    name: 'Beginner',
-    description: 'Same 4 notes until all correct',
-    noteCount: 4,
-    repeatUntilPerfect: true,
-  },
-  elementary: {
-    name: 'Elementary',
-    description: '4 notes, failed notes retry',
-    noteCount: 4,
-    repeatUntilPerfect: false,
-  },
-  intermediate: {
-    name: 'Intermediate',
-    description: '8 notes, faster pace',
-    noteCount: 8,
-    repeatUntilPerfect: false,
-  },
-  advanced: {
-    name: 'Advanced',
-    description: '12 notes, full range',
-    noteCount: 12,
-    repeatUntilPerfect: false,
-  },
-  expert: {
-    name: 'Expert',
-    description: '16 notes, mastery challenge',
-    noteCount: 16,
-    repeatUntilPerfect: false,
-  },
-};
-
 interface NoteState {
   note: string;
   status: 'pending' | 'active' | 'correct' | 'missed';
@@ -55,76 +12,49 @@ interface NoteState {
 }
 
 export const NotectorGame: React.FC = () => {
-  const [gameState, setGameState] = useState<'idle' | 'playing' | 'paused'>('idle');
-  const [level, setLevel] = useState<DifficultyLevel>('beginner');
+  const [gameState, setGameState] = useState<'idle' | 'playing'>('idle');
   const [notes, setNotes] = useState<NoteState[]>([]);
   const [currentNoteIndex, setCurrentNoteIndex] = useState(0);
   const [score, setScore] = useState(0);
-  const [roundNumber, setRoundNumber] = useState(1);
   const [bpm, setBpm] = useState(60);
   const [failedNotes, setFailedNotes] = useState<string[]>([]);
-  const [currentSequence, setCurrentSequence] = useState<string[]>([]); // For beginner mode
 
   const beatTimeoutRef = useRef<NodeJS.Timeout>();
-  const pauseTimeoutRef = useRef<NodeJS.Timeout>();
   const matchedRef = useRef(false);
 
   const { detectedNote, isListening, matchesNote } = usePitchDetection(gameState === 'playing');
   useMetronome(bpm, gameState === 'playing');
 
-  const levelConfig = LEVELS[level];
-
-  // Generate notes based on level
-  const generateNotes = useCallback((useExistingSequence = false) => {
+  // Generate 4 notes (1 per bar)
+  const generateNotes = useCallback(() => {
     const newNotes: NoteState[] = [];
-    let notesToUse: string[];
 
-    if (levelConfig.repeatUntilPerfect && useExistingSequence && currentSequence.length > 0) {
-      // Beginner mode: reuse same sequence
-      notesToUse = [...currentSequence];
-    } else {
-      // Generate new sequence
-      if (!levelConfig.repeatUntilPerfect) {
-        // Include failed notes from previous round
-        notesToUse = [...failedNotes];
-      } else {
-        notesToUse = [];
-      }
+    // Include failed notes from previous round
+    const notesToUse = [...failedNotes];
 
-      // Add random notes to reach target count
-      while (notesToUse.length < levelConfig.noteCount) {
-        const randomNote = BASIC_NOTES[Math.floor(Math.random() * BASIC_NOTES.length)];
-        notesToUse.push(randomNote);
-      }
-
-      // Shuffle
-      notesToUse = notesToUse.sort(() => Math.random() - 0.5).slice(0, levelConfig.noteCount);
-
-      // Save sequence for beginner mode
-      if (levelConfig.repeatUntilPerfect) {
-        setCurrentSequence(notesToUse);
-      }
+    // Add random notes to make 4 total
+    while (notesToUse.length < 4) {
+      const randomNote = BASIC_NOTES[Math.floor(Math.random() * BASIC_NOTES.length)];
+      notesToUse.push(randomNote);
     }
 
-    // Create note states (only showing first 4 in display)
-    notesToUse.forEach((note, index) => {
+    // Shuffle and create note states
+    const shuffled = notesToUse.sort(() => Math.random() - 0.5).slice(0, 4);
+    shuffled.forEach((note, index) => {
       newNotes.push({
         note,
         status: 'pending',
-        barIndex: index % 4, // Distribute across 4 bars
+        barIndex: index,
       });
     });
 
     return newNotes;
-  }, [levelConfig, failedNotes, currentSequence]);
+  }, [failedNotes]);
 
   const startGame = useCallback(() => {
-    const newNotes = generateNotes(false);
+    const newNotes = generateNotes();
     setNotes(newNotes);
     setCurrentNoteIndex(0);
-    setScore(0);
-    setRoundNumber(1);
-    setFailedNotes([]);
     setGameState('playing');
     matchedRef.current = false;
 
@@ -137,44 +67,14 @@ export const NotectorGame: React.FC = () => {
     scheduleBeat(0);
   }, [generateNotes]);
 
-  const startNextRound = useCallback(() => {
-    const hasFailedNotes = notes.some(n => n.status === 'missed');
-
-    if (levelConfig.repeatUntilPerfect && hasFailedNotes) {
-      // Beginner mode: repeat same sequence
-      const newNotes = generateNotes(true);
-      setNotes(newNotes);
-    } else {
-      // Other modes: generate new sequence
-      const newNotes = generateNotes(false);
-      setNotes(newNotes);
-      setFailedNotes([]); // Clear failed notes after using them
-    }
-
-    setCurrentNoteIndex(0);
-    setRoundNumber(prev => prev + 1);
-    setGameState('playing');
-    matchedRef.current = false;
-
-    // Activate first note
-    setNotes(prev => prev.map((n, i) =>
-      i === 0 ? { ...n, status: 'active' } : n
-    ));
-
-    // Schedule beat progression
-    scheduleBeat(0);
-  }, [notes, levelConfig, generateNotes]);
-
   const scheduleBeat = (noteIndex: number) => {
-    const displayCount = Math.min(levelConfig.noteCount, 4); // Show max 4 bars at once
-
-    if (noteIndex >= displayCount) {
+    if (noteIndex >= 4) {
       // Round complete
       finishRound();
       return;
     }
 
-    const beatDuration = (60 / bpm) * 1000;
+    const beatDuration = (60 / bpm) * 1000; // Convert BPM to milliseconds
 
     beatTimeoutRef.current = setTimeout(() => {
       // Check if current note was matched
@@ -183,10 +83,7 @@ export const NotectorGame: React.FC = () => {
         setNotes(prev => prev.map((n, i) =>
           i === noteIndex ? { ...n, status: 'missed' } : n
         ));
-        setFailedNotes(prev => {
-          const note = notes[noteIndex]?.note;
-          return note ? [...prev, note] : prev;
-        });
+        setFailedNotes(prev => [...prev, notes[noteIndex]?.note].filter(Boolean));
       }
 
       matchedRef.current = false;
@@ -195,7 +92,7 @@ export const NotectorGame: React.FC = () => {
       const nextIndex = noteIndex + 1;
       setCurrentNoteIndex(nextIndex);
 
-      if (nextIndex < displayCount) {
+      if (nextIndex < 4) {
         setNotes(prev => prev.map((n, i) =>
           i === nextIndex ? { ...n, status: 'active' } : n
         ));
@@ -207,21 +104,20 @@ export const NotectorGame: React.FC = () => {
   };
 
   const finishRound = () => {
-    setGameState('paused');
-
-    // Short pause before next round (2 seconds)
-    pauseTimeoutRef.current = setTimeout(() => {
-      startNextRound();
-    }, 2000);
+    setGameState('idle');
+    // Keep the display showing results
+    setTimeout(() => {
+      // Auto-start next round after showing results
+      if (confirm('Round complete! Start next round?')) {
+        startGame();
+      }
+    }, 1000);
   };
 
   const stopGame = useCallback(() => {
     setGameState('idle');
     if (beatTimeoutRef.current) {
       clearTimeout(beatTimeoutRef.current);
-    }
-    if (pauseTimeoutRef.current) {
-      clearTimeout(pauseTimeoutRef.current);
     }
   }, []);
 
@@ -239,41 +135,25 @@ export const NotectorGame: React.FC = () => {
       setNotes(prev => prev.map((n, i) =>
         i === currentNoteIndex ? { ...n, status: 'correct' } : n
       ));
+
+      // Remove from failed notes if it was there
+      setFailedNotes(prev => prev.filter(n => n !== currentNote.note));
     }
   }, [detectedNote, gameState, notes, currentNoteIndex, matchesNote]);
 
   // Cleanup
   useEffect(() => {
     return () => {
-      if (beatTimeoutRef.current) clearTimeout(beatTimeoutRef.current);
-      if (pauseTimeoutRef.current) clearTimeout(pauseTimeoutRef.current);
+      if (beatTimeoutRef.current) {
+        clearTimeout(beatTimeoutRef.current);
+      }
     };
   }, []);
-
-  const displayNotes = notes.slice(0, 4); // Always show max 4 bars
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Toolbar */}
-      <div className="bg-white border-b border-gray-300 p-4 flex items-center gap-6 flex-wrap">
-        {/* Level Selector */}
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-semibold text-gray-700">Level:</label>
-          <select
-            value={level}
-            onChange={(e) => setLevel(e.target.value as DifficultyLevel)}
-            disabled={gameState === 'playing' || gameState === 'paused'}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-base font-semibold"
-          >
-            {Object.entries(LEVELS).map(([key, config]) => (
-              <option key={key} value={key}>
-                {config.name}
-              </option>
-            ))}
-          </select>
-          <span className="text-sm text-gray-500">{levelConfig.description}</span>
-        </div>
-
+      <div className="bg-white border-b border-gray-300 p-4 flex items-center gap-6">
         <div className="flex items-center gap-2">
           <label className="text-sm font-semibold text-gray-700">BPM:</label>
           <input
@@ -282,20 +162,14 @@ export const NotectorGame: React.FC = () => {
             onChange={(e) => setBpm(parseInt(e.target.value) || 60)}
             min="30"
             max="180"
-            disabled={gameState === 'playing' || gameState === 'paused'}
+            disabled={gameState === 'playing'}
             className="w-24 px-3 py-2 border border-gray-300 rounded-lg text-lg font-semibold"
           />
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="text-sm">
-            <span className="font-semibold text-gray-700">Round:</span>
-            <span className="ml-2 text-lg font-bold text-blue-600">{roundNumber}</span>
-          </div>
-          <div className="text-sm">
-            <span className="font-semibold text-gray-700">Score:</span>
-            <span className="ml-2 text-2xl font-bold text-green-600">{score}</span>
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-gray-700">Score:</span>
+          <span className="text-2xl font-bold text-blue-600">{score}</span>
         </div>
 
         {gameState === 'idle' && (
@@ -307,7 +181,7 @@ export const NotectorGame: React.FC = () => {
           </button>
         )}
 
-        {(gameState === 'playing' || gameState === 'paused') && (
+        {gameState === 'playing' && (
           <button
             onClick={stopGame}
             className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white text-lg font-semibold rounded-lg transition-colors"
@@ -337,14 +211,9 @@ export const NotectorGame: React.FC = () => {
             <p className="text-xl text-gray-600 mb-8">
               Practice notes C, D, E, F, G, A, B on the highest 3 strings
             </p>
-            <div className="space-y-3 text-left max-w-2xl mx-auto">
-              {Object.entries(LEVELS).map(([key, config]) => (
-                <div key={key} className="p-4 bg-white rounded-lg border border-gray-300">
-                  <div className="font-semibold text-gray-900">{config.name}</div>
-                  <div className="text-gray-600">{config.description}</div>
-                </div>
-              ))}
-            </div>
+            <p className="text-gray-500">
+              4 bars • 1 whole note per bar • Set your BPM and start!
+            </p>
           </div>
         ) : (
           <div className="w-full max-w-6xl">
@@ -382,26 +251,27 @@ export const NotectorGame: React.FC = () => {
               ))}
 
               {/* Notes */}
-              {displayNotes.map((noteState, index) => {
+              {notes.map((noteState, index) => {
                 const x = 280 + index * 235;
                 const noteY = getNoteY(noteState.note);
 
-                let fill = '#666';
+                let fill = '#666'; // pending
                 let stroke = '#333';
 
                 if (noteState.status === 'active') {
-                  fill = '#3b82f6';
+                  fill = '#3b82f6'; // blue
                   stroke = '#1e40af';
                 } else if (noteState.status === 'correct') {
-                  fill = '#22c55e';
+                  fill = '#22c55e'; // green
                   stroke = '#16a34a';
                 } else if (noteState.status === 'missed') {
-                  fill = '#ef4444';
+                  fill = '#ef4444'; // red
                   stroke = '#dc2626';
                 }
 
                 return (
                   <g key={index}>
+                    {/* Whole note (hollow oval) */}
                     <ellipse
                       cx={x}
                       cy={noteY}
@@ -411,6 +281,8 @@ export const NotectorGame: React.FC = () => {
                       stroke={stroke}
                       strokeWidth={3}
                     />
+
+                    {/* Note name below */}
                     <text
                       x={x}
                       y={noteY + 60}
@@ -421,6 +293,8 @@ export const NotectorGame: React.FC = () => {
                     >
                       {noteState.note.replace('4', '')}
                     </text>
+
+                    {/* Bar number */}
                     <text
                       x={x}
                       y={80}
@@ -451,38 +325,28 @@ export const NotectorGame: React.FC = () => {
               </g>
             </svg>
 
-            {/* Status Messages */}
+            {/* Instructions */}
             {gameState === 'playing' && (
               <div className="mt-8 text-center">
                 <p className="text-2xl font-semibold text-gray-700">
-                  {levelConfig.name} Level - Round {roundNumber}
+                  Watch for the blue note - that's your cue to play!
                 </p>
                 <p className="text-lg text-gray-500 mt-2">
-                  Watch for the blue note - that's your cue to play!
+                  Notes change every {(60 / bpm).toFixed(1)} seconds at {bpm} BPM
                 </p>
               </div>
             )}
 
-            {gameState === 'paused' && (
+            {gameState === 'idle' && notes.length > 0 && (
               <div className="mt-8 text-center">
-                <p className="text-3xl font-bold text-blue-600 animate-pulse">
-                  Get Ready for Round {roundNumber + 1}...
+                <p className="text-3xl font-bold text-gray-800">
+                  Round Complete! Score: {score} / 4
                 </p>
-                <p className="text-lg text-gray-600 mt-2">
-                  {notes.every(n => n.status === 'correct') ? (
-                    <span className="text-green-600 font-semibold">Perfect! All notes correct! 🎉</span>
-                  ) : (
-                    levelConfig.repeatUntilPerfect ? (
-                      <span className="text-orange-600 font-semibold">
-                        Repeating same notes until all correct
-                      </span>
-                    ) : (
-                      <span className="text-gray-600">
-                        Missed notes will appear in next round
-                      </span>
-                    )
-                  )}
-                </p>
+                {failedNotes.length > 0 && (
+                  <p className="text-lg text-gray-600 mt-2">
+                    Missed notes will appear in the next round: {failedNotes.join(', ')}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -495,14 +359,14 @@ export const NotectorGame: React.FC = () => {
 // Helper function to calculate note Y position on staff
 function getNoteY(note: string): number {
   const positions: { [key: string]: number } = {
-    'B4': 100,
+    'B4': 100,  // Above staff
     'A4': 115,
     'G4': 130,
     'F4': 145,
-    'E4': 160,
+    'E4': 160,  // Middle line
     'D4': 175,
     'C4': 190,
-    'B3': 205,
+    'B3': 205,  // Below staff
     'A3': 220,
   };
   return positions[note] || 160;
