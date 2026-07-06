@@ -400,8 +400,35 @@ export const NotectorGame: React.FC = () => {
                   stroke = '#dc2626';
                 }
 
+                // Determine if we need ledger lines
+                const needsLedgerLines: number[] = [];
+                if (noteY >= 250) {
+                  // Below staff - add ledger lines at 250, 280, etc.
+                  for (let y = 250; y <= noteY; y += 30) {
+                    needsLedgerLines.push(y);
+                  }
+                } else if (noteY <= 85) {
+                  // Above staff - add ledger lines at 85, 55, etc.
+                  for (let y = 85; y >= noteY; y -= 30) {
+                    needsLedgerLines.push(y);
+                  }
+                }
+
                 return (
                   <g key={index}>
+                    {/* Ledger lines */}
+                    {needsLedgerLines.map((y) => (
+                      <line
+                        key={`ledger-${index}-${y}`}
+                        x1={x - 25}
+                        y1={y}
+                        x2={x + 25}
+                        y2={y}
+                        stroke="#000"
+                        strokeWidth={2}
+                      />
+                    ))}
+
                     <ellipse
                       cx={x}
                       cy={noteY}
@@ -419,7 +446,7 @@ export const NotectorGame: React.FC = () => {
                       fontWeight="bold"
                       fill={stroke}
                     >
-                      {noteState.note.replace('4', '')}
+                      {noteState.note.replace(/[0-9]/g, '')}
                     </text>
                     <text
                       x={x}
@@ -493,17 +520,26 @@ export const NotectorGame: React.FC = () => {
 };
 
 // Helper function to calculate note Y position on staff
+// Standard treble clef: Lines (bottom to top) = E, G, B, D, F
+// Spaces (bottom to top) = F, A, C, E
 function getNoteY(note: string): number {
   const positions: { [key: string]: number } = {
-    'B4': 100,
-    'A4': 115,
-    'G4': 130,
-    'F4': 145,
-    'E4': 160,
-    'D4': 175,
-    'C4': 190,
-    'B3': 205,
-    'A3': 220,
+    // Above staff
+    'A5': 70,   // space above
+    'G5': 85,   // ledger line above
+    'F5': 100,  // top line
+    'E5': 115,  // space
+    'D5': 130,  // line
+    'C5': 145,  // space
+    'B4': 160,  // middle line
+    'A4': 175,  // space
+    'G4': 190,  // line
+    'F4': 205,  // space
+    'E4': 220,  // bottom line
+    'D4': 235,  // space below
+    'C4': 250,  // ledger line below
+    'B3': 265,  // space below
+    'A3': 280,  // ledger line below
   };
   return positions[note] || 160;
 }
