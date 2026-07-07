@@ -260,6 +260,28 @@ export const NotectorGame: React.FC = () => {
     }
   }, [detectedNote, gameState, notes, currentNoteIndex, matchesNote]);
 
+  // DEV-ONLY: press "M" to force-match the active note, so the game can be
+  // tested without a microphone/guitar. Stripped from production builds.
+  useEffect(() => {
+    if (!import.meta.env.DEV || gameState !== 'playing') return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'm' && e.key !== 'M') return;
+      if (matchedRef.current) return;
+      const idx = notesRef.current.findIndex(n => n.status === 'active');
+      if (idx === -1) return;
+      e.preventDefault();
+      matchedRef.current = true;
+      setScore(prev => prev + 1);
+      setNotes(prev => prev.map((n, i) =>
+        i === idx ? { ...n, status: 'correct' } : n
+      ));
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [gameState]);
+
   // Cleanup
   useEffect(() => {
     return () => {
@@ -348,6 +370,11 @@ export const NotectorGame: React.FC = () => {
         )}
 
         <div className="ml-auto flex items-center gap-2 text-gray-600">
+          {import.meta.env.DEV && (gameState === 'playing' || gameState === 'paused') && (
+            <span className="px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-mono border border-purple-300">
+              DEV: press M to match
+            </span>
+          )}
           {isListening && (
             <>
               <span className="text-2xl">🎤</span>
