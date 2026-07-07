@@ -65,6 +65,8 @@ export const NotectorGame: React.FC = () => {
   const [failedNotes, setFailedNotes] = useState<string[]>([]);
   const [currentSequence, setCurrentSequence] = useState<string[]>([]); // For beginner mode
   const [isRepeatingBar, setIsRepeatingBar] = useState(false); // Beginner: is the current bar a repeat?
+  // How the player answers: 'listen' = app hears the guitar via mic; 'pick' = type the note name.
+  const [inputMode, setInputMode] = useState<'pick' | 'listen'>('pick');
 
   const beatTimeoutRef = useRef<NodeJS.Timeout>();
   const pauseTimeoutRef = useRef<NodeJS.Timeout>();
@@ -74,7 +76,7 @@ export const NotectorGame: React.FC = () => {
   const notesRef = useRef<NoteState[]>([]);
   const currentSequenceRef = useRef<string[]>([]);
 
-  const { detectedNote, isListening, matchesNote } = usePitchDetection(gameState === 'playing');
+  const { detectedNote, isListening, matchesNote } = usePitchDetection(gameState === 'playing' && inputMode === 'listen');
   useMetronome(bpm, gameState === 'playing');
 
   const levelConfig = LEVELS[level];
@@ -260,6 +262,29 @@ export const NotectorGame: React.FC = () => {
     }
   }, [detectedNote, gameState, notes, currentNoteIndex, matchesNote]);
 
+  // PICK mode: answer the active note by typing its letter name (case-insensitive).
+  // Wrong letters are ignored — the beat timer still decides a miss, same as Listen mode.
+  useEffect(() => {
+    if (inputMode !== 'pick' || gameState !== 'playing') return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toUpperCase();
+      if (key.length !== 1 || !'ABCDEFG'.includes(key)) return;
+      if (matchedRef.current) return;
+      const idx = notesRef.current.findIndex(n => n.status === 'active');
+      if (idx === -1) return;
+      const activeLetter = notesRef.current[idx].note.replace(/[0-9]/g, '').toUpperCase();
+      if (key !== activeLetter) return;
+      e.preventDefault();
+      matchedRef.current = true;
+      setScore(prev => prev + 1);
+      setNotes(prev => prev.map((n, i) => (i === idx ? { ...n, status: 'correct' } : n)));
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [inputMode, gameState]);
+
   // DEV-ONLY: press "M" to force-match the active note, so the game can be
   // tested without a microphone/guitar. Stripped from production builds.
   useEffect(() => {
@@ -312,6 +337,31 @@ export const NotectorGame: React.FC = () => {
             ))}
           </select>
           <span className="text-sm text-gray-500">{levelConfig.description}</span>
+        </div>
+
+        {/* Answer mode: Pick (type) vs Listen (guitar/mic) */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-semibold text-gray-700">Answer by:</label>
+          <div className="flex rounded-lg overflow-hidden border border-gray-300">
+            <button
+              onClick={() => setInputMode('pick')}
+              disabled={gameState === 'playing' || gameState === 'paused'}
+              className={`px-3 py-2 text-sm font-semibold transition-colors disabled:opacity-60 ${
+                inputMode === 'pick' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              ⌨️ Pick
+            </button>
+            <button
+              onClick={() => setInputMode('listen')}
+              disabled={gameState === 'playing' || gameState === 'paused'}
+              className={`px-3 py-2 text-sm font-semibold border-l border-gray-300 transition-colors disabled:opacity-60 ${
+                inputMode === 'listen' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              🎸 Listen
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -371,8 +421,16 @@ export const NotectorGame: React.FC = () => {
 
         <div className="ml-auto flex items-center gap-2 text-gray-600">
           {import.meta.env.DEV && (gameState === 'playing' || gameState === 'paused') && (
-            <span className="px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-mono border border-purple-300">
-              DEV: press M to match
+            <span className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-purple-600 text-white text-sm font-mono font-bold border-2 border-purple-800 shadow animate-pulse">
+              🐞 DEV — press
+              <kbd className="px-1.5 py-0.5 bg-white/25 rounded font-bold">M</kbd>
+              to match
+            </span>
+          )}
+          {inputMode === 'pick' && (gameState === 'playing' || gameState === 'paused') && (
+            <span className="flex items-center gap-2 font-medium">
+              <span className="text-2xl">⌨️</span>
+              Type the note name
             </span>
           )}
           {isListening && (
@@ -388,7 +446,7 @@ export const NotectorGame: React.FC = () => {
       </div>
 
       {/* Main Game Area */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-4">
         {gameState === 'idle' && notes.length === 0 ? (
           <div className="text-center">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">Notector Practice</h2>
@@ -405,34 +463,41 @@ export const NotectorGame: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="w-full max-w-6xl">
+          <div className="w-full max-w-[1500px]">
             {/* Music Staff with 4 Bars */}
-            <svg width="100%" height="400" viewBox="0 0 1200 400" className="bg-white rounded-lg border-2 border-gray-300 shadow-lg">
+            <svg width="100%" viewBox="0 0 1200 360" preserveAspectRatio="xMidYMid meet" className="w-full h-auto bg-white rounded-xl border-2 border-gray-300 shadow-lg">
               {/* Staff lines */}
               {[0, 1, 2, 3, 4].map((lineIndex) => (
                 <line
                   key={`staff-${lineIndex}`}
-                  x1={80}
+                  x1={60}
                   y1={100 + lineIndex * 30}
-                  x2={1120}
+                  x2={1160}
                   y2={100 + lineIndex * 30}
                   stroke="#000"
                   strokeWidth={2}
                 />
               ))}
 
-              {/* Treble clef */}
-              <text x={90} y={160} fontSize="72" fontFamily="serif">
-                🎼
+              {/* Treble (G) clef — a real clef glyph (no built-in staff lines),
+                  sized to span the staff with the curl near the G4 line. */}
+              <text
+                x={68}
+                y={232}
+                fontSize={175}
+                fontFamily="'Apple Symbols', 'Noto Music', 'Bravura', serif"
+                fill="#111"
+              >
+                𝄞
               </text>
 
               {/* Bar lines */}
               {[0, 1, 2, 3, 4].map((barIndex) => (
                 <line
                   key={`bar-${barIndex}`}
-                  x1={180 + barIndex * 235}
+                  x1={160 + barIndex * 250}
                   y1={100}
-                  x2={180 + barIndex * 235}
+                  x2={160 + barIndex * 250}
                   y2={220}
                   stroke="#000"
                   strokeWidth={barIndex === 4 ? 4 : 2}
@@ -441,7 +506,7 @@ export const NotectorGame: React.FC = () => {
 
               {/* Notes */}
               {displayNotes.map((noteState, index) => {
-                const x = 280 + index * 235;
+                const x = 285 + index * 250;
                 const noteY = getNoteY(noteState.note);
 
                 let fill = '#666';
@@ -496,22 +561,24 @@ export const NotectorGame: React.FC = () => {
                       stroke={stroke}
                       strokeWidth={3}
                     />
+                    {(noteState.status === 'correct' || noteState.status === 'missed') && (
+                      <text
+                        x={x}
+                        y={288}
+                        textAnchor="middle"
+                        fontSize="26"
+                        fontWeight="bold"
+                        fill={stroke}
+                      >
+                        {noteState.note.replace(/[0-9]/g, '')}
+                      </text>
+                    )}
                     <text
                       x={x}
-                      y={noteY + 60}
-                      textAnchor="middle"
-                      fontSize="24"
-                      fontWeight="bold"
-                      fill={stroke}
-                    >
-                      {noteState.note.replace(/[0-9]/g, '')}
-                    </text>
-                    <text
-                      x={x}
-                      y={80}
+                      y={64}
                       textAnchor="middle"
                       fontSize="16"
-                      fill="#666"
+                      fill="#94a3b8"
                     >
                       Bar {index + 1}
                     </text>
@@ -520,7 +587,7 @@ export const NotectorGame: React.FC = () => {
               })}
 
               {/* Legend */}
-              <g transform="translate(80, 320)">
+              <g transform="translate(60, 338)">
                 <text fontSize="18" fontWeight="bold" fill="#333">Legend:</text>
                 <circle cx={80} cy={-3} r={10} fill="#fff" stroke="#333" strokeWidth={2} />
                 <text x={100} fontSize="16" fill="#666">= Pending</text>
@@ -543,7 +610,9 @@ export const NotectorGame: React.FC = () => {
                   {levelConfig.name} Level - Round {roundNumber}
                 </p>
                 <p className="text-lg text-gray-500 mt-2">
-                  Watch for the blue note - that's your cue to play!
+                  {inputMode === 'pick'
+                    ? 'Read the blue note and type its name (C D E F G A B)'
+                    : "Watch for the blue note - that's your cue to play!"}
                 </p>
               </div>
             )}
