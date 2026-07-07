@@ -66,7 +66,7 @@ export const NotectorGame: React.FC = () => {
   const [currentSequence, setCurrentSequence] = useState<string[]>([]); // For beginner mode
   const [isRepeatingBar, setIsRepeatingBar] = useState(false); // Beginner: is the current bar a repeat?
   // How the player answers: 'listen' = app hears the guitar via mic; 'pick' = type the note name.
-  const [inputMode, setInputMode] = useState<'pick' | 'listen'>('pick');
+  const [inputMode, setInputMode] = useState<'pick' | 'listen'>('listen');
 
   const beatTimeoutRef = useRef<NodeJS.Timeout>();
   const pauseTimeoutRef = useRef<NodeJS.Timeout>();
