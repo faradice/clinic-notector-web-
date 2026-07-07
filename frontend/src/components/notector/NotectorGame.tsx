@@ -64,24 +64,37 @@ export const NotectorGame: React.FC = () => {
   const [bpm, setBpm] = useState(60);
   const [failedNotes, setFailedNotes] = useState<string[]>([]);
   const [currentSequence, setCurrentSequence] = useState<string[]>([]); // For beginner mode
+  const [isRepeatingBar, setIsRepeatingBar] = useState(false); // Beginner: is the current bar a repeat?
 
   const beatTimeoutRef = useRef<NodeJS.Timeout>();
   const pauseTimeoutRef = useRef<NodeJS.Timeout>();
   const matchedRef = useRef(false);
+  // Refs mirror the latest state so the setTimeout-driven beat chain (which
+  // closes over stale render values) always reads current data.
+  const notesRef = useRef<NoteState[]>([]);
+  const currentSequenceRef = useRef<string[]>([]);
 
   const { detectedNote, isListening, matchesNote } = usePitchDetection(gameState === 'playing');
   useMetronome(bpm, gameState === 'playing');
 
   const levelConfig = LEVELS[level];
 
+  // Keep refs in sync with state for use inside timeout callbacks.
+  useEffect(() => {
+    notesRef.current = notes;
+  }, [notes]);
+  useEffect(() => {
+    currentSequenceRef.current = currentSequence;
+  }, [currentSequence]);
+
   // Generate notes based on level
   const generateNotes = useCallback((useExistingSequence = false) => {
     const newNotes: NoteState[] = [];
     let notesToUse: string[];
 
-    if (levelConfig.repeatUntilPerfect && useExistingSequence && currentSequence.length > 0) {
-      // Beginner mode: reuse same sequence
-      notesToUse = [...currentSequence];
+    if (levelConfig.repeatUntilPerfect && useExistingSequence && currentSequenceRef.current.length > 0) {
+      // Beginner mode: reuse the exact same sequence, same order
+      notesToUse = [...currentSequenceRef.current];
     } else {
       // Generate new sequence
       if (!levelConfig.repeatUntilPerfect) {
@@ -116,7 +129,7 @@ export const NotectorGame: React.FC = () => {
     });
 
     return newNotes;
-  }, [levelConfig, failedNotes, currentSequence]);
+  }, [levelConfig, failedNotes]);
 
   const startGame = useCallback(() => {
     const newNotes = generateNotes(false);
@@ -125,6 +138,7 @@ export const NotectorGame: React.FC = () => {
     setScore(0);
     setRoundNumber(1);
     setFailedNotes([]);
+    setIsRepeatingBar(false);
     setGameState('playing');
     matchedRef.current = false;
 
@@ -138,17 +152,21 @@ export const NotectorGame: React.FC = () => {
   }, [generateNotes]);
 
   const startNextRound = useCallback(() => {
-    const hasFailedNotes = notes.some(n => n.status === 'missed');
+    // Read the round's final statuses from the ref (the state closure here is stale).
+    const roundNotes = notesRef.current;
+    const allCorrect = roundNotes.length > 0 && roundNotes.every(n => n.status === 'correct');
 
-    if (levelConfig.repeatUntilPerfect && hasFailedNotes) {
-      // Beginner mode: repeat same sequence
+    if (levelConfig.repeatUntilPerfect && !allCorrect) {
+      // Beginner mode: keep the exact same bar until every note is correct
       const newNotes = generateNotes(true);
       setNotes(newNotes);
+      setIsRepeatingBar(true);
     } else {
-      // Other modes: generate new sequence
+      // Perfect round (or non-beginner level): move on to a new pattern
       const newNotes = generateNotes(false);
       setNotes(newNotes);
       setFailedNotes([]); // Clear failed notes after using them
+      setIsRepeatingBar(false);
     }
 
     setCurrentNoteIndex(0);
@@ -163,7 +181,7 @@ export const NotectorGame: React.FC = () => {
 
     // Schedule beat progression
     scheduleBeat(0);
-  }, [notes, levelConfig, generateNotes]);
+  }, [levelConfig, generateNotes]);
 
   const scheduleBeat = (noteIndex: number) => {
     const displayCount = Math.min(levelConfig.noteCount, 4); // Show max 4 bars at once
@@ -184,7 +202,7 @@ export const NotectorGame: React.FC = () => {
           i === noteIndex ? { ...n, status: 'missed' } : n
         ));
         setFailedNotes(prev => {
-          const note = notes[noteIndex]?.note;
+          const note = notesRef.current[noteIndex]?.note;
           return note ? [...prev, note] : prev;
         });
       }
@@ -297,6 +315,19 @@ export const NotectorGame: React.FC = () => {
             <span className="ml-2 text-2xl font-bold text-green-600">{score}</span>
           </div>
         </div>
+
+        {/* Repeat indicator (beginner-style levels only) */}
+        {levelConfig.repeatUntilPerfect && (gameState === 'playing' || gameState === 'paused') && (
+          isRepeatingBar ? (
+            <span className="px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 text-sm font-semibold border border-orange-300">
+              🔁 Repeating this bar
+            </span>
+          ) : (
+            <span className="px-3 py-1.5 rounded-full bg-green-100 text-green-700 text-sm font-semibold border border-green-300">
+              ✨ New bar
+            </span>
+          )
+        )}
 
         {gameState === 'idle' && (
           <button
