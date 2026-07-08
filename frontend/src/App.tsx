@@ -6,6 +6,7 @@ import { FretboardViewer } from './components/chord-editor/FretboardViewer';
 import { ComposerCanvas } from './components/composer/ComposerCanvas';
 import { PlayerViewer } from './components/player/PlayerViewer';
 import { NotectorGame } from './components/notector/NotectorGame';
+import { GuitarTuner } from './components/tuner/GuitarTuner';
 
 const queryClient = new QueryClient();
 
@@ -102,7 +103,7 @@ function SongList() {
 }
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'player' | 'composer' | 'chords' | 'notector' | 'songs'>('player');
+  const [activeTab, setActiveTab] = useState<'player' | 'composer' | 'chords' | 'notector' | 'tuner' | 'songs'>('player');
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -151,6 +152,16 @@ function App() {
                 Notector
               </button>
               <button
+                onClick={() => setActiveTab('tuner')}
+                className={`pb-2 px-1 font-semibold transition-colors border-b-2 ${
+                  activeTab === 'tuner'
+                    ? 'text-blue-600 border-blue-600'
+                    : 'text-gray-500 border-transparent hover:text-gray-700'
+                }`}
+              >
+                Tuner
+              </button>
+              <button
                 onClick={() => setActiveTab('songs')}
                 className={`pb-2 px-1 font-semibold transition-colors border-b-2 ${
                   activeTab === 'songs'
@@ -164,11 +175,12 @@ function App() {
           </div>
         </div>
 
-        <div className={activeTab === 'composer' || activeTab === 'player' || activeTab === 'notector' ? '' : 'py-8'}>
+        <div className={activeTab === 'composer' || activeTab === 'player' || activeTab === 'notector' || activeTab === 'tuner' ? '' : 'py-8'}>
           {activeTab === 'player' && <PlayerViewer />}
           {activeTab === 'composer' && <ComposerCanvas />}
           {activeTab === 'chords' && <FretboardViewer />}
           {activeTab === 'notector' && <NotectorGame />}
+          {activeTab === 'tuner' && <GuitarTuner />}
           {activeTab === 'songs' && <SongList />}
         </div>
       </div>
