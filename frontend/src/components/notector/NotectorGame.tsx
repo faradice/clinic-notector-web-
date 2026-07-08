@@ -98,11 +98,11 @@ export const NotectorGame: React.FC = () => {
   const detectedNote = reading.note ? `${reading.note}${reading.octave}` : null;
   const matchesNote = useCallback(
     (target: string) => {
-      if (!reading.note || reading.octave == null) return false;
-      // Nearest-note match (target like 'C4') gives ~±50¢ slack while playing.
+      if (!reading.note) return false;
+      // Octave-agnostic: any octave of the right letter counts (e.g. low E2 or
+      // high E4 both match a target of 'E'). Nearest-note gives ~±50¢ slack too.
       const letter = target.replace(/[0-9]/g, '');
-      const octave = parseInt(target.replace(/[^0-9]/g, ''), 10);
-      return reading.note === letter && reading.octave === octave;
+      return reading.note === letter;
     },
     [reading],
   );
