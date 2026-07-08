@@ -42,21 +42,19 @@ describe('NotectorGame — Pick mode', () => {
     vi.restoreAllMocks()
   })
 
-  it('hides the note name until it is answered', () => {
+  it('hides note names by default (Names toggle off)', () => {
     render(<NotectorGame />)
     startInPickMode()
-    // The active note's letter must not be shown before the player answers.
     expect(screen.queryByText('C')).not.toBeInTheDocument()
   })
 
-  it('marks the active note correct when its letter is typed (lowercase)', () => {
+  it('scores when the correct letter is typed (lowercase)', () => {
     render(<NotectorGame />)
     startInPickMode()
 
     fireEvent.keyDown(document.body, { key: 'c' })
 
-    // Once correct, the note reveals its letter as feedback.
-    expect(screen.getByText('C')).toBeInTheDocument()
+    expect(screen.getByTestId('score')).toHaveTextContent('1')
   })
 
   it('accepts the letter case-insensitively (uppercase)', () => {
@@ -65,17 +63,29 @@ describe('NotectorGame — Pick mode', () => {
 
     fireEvent.keyDown(document.body, { key: 'C' })
 
-    expect(screen.getByText('C')).toBeInTheDocument()
+    expect(screen.getByTestId('score')).toHaveTextContent('1')
   })
 
-  it('ignores a wrong note letter (no reveal, no miss)', () => {
+  it('ignores a wrong note letter (no score)', () => {
     render(<NotectorGame />)
     startInPickMode()
 
     fireEvent.keyDown(document.body, { key: 'd' }) // active note is C, not D
 
+    expect(screen.getByTestId('score')).toHaveTextContent('0')
+  })
+
+  it('Names toggle shows/hides every note letter, even while playing', () => {
+    render(<NotectorGame />)
+    startInPickMode() // 4 notes, all C4 (Math.random -> 0); names off => none shown
     expect(screen.queryByText('C')).not.toBeInTheDocument()
-    expect(screen.queryByText('D')).not.toBeInTheDocument()
+
+    const namesToggle = screen.getByRole('button', { name: /names/i })
+    fireEvent.click(namesToggle)
+    expect(screen.getAllByText('C')).toHaveLength(4)
+
+    fireEvent.click(namesToggle)
+    expect(screen.queryByText('C')).not.toBeInTheDocument()
   })
 })
 
@@ -94,9 +104,7 @@ describe('NotectorGame — Muscle Memory mode', () => {
 
   it('shows the bar builder and source picker when Muscle Memory is selected', () => {
     render(<NotectorGame />)
-    // The Level dropdown is the first combobox (Note length is the second).
-    const levelSelect = screen.getAllByRole('combobox')[0]
-    fireEvent.change(levelSelect, { target: { value: 'muscle' } })
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'muscle' } })
     expect(screen.getByText(/Create a bar/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Random bar/i })).toBeInTheDocument()
   })

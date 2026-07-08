@@ -512,7 +512,7 @@ export const NotectorGame: React.FC = () => {
           </div>
           <div className="text-sm">
             <span className="font-semibold text-gray-700">Score:</span>
-            <span className="ml-2 text-2xl font-bold text-green-600">{score}</span>
+            <span data-testid="score" className="ml-2 text-2xl font-bold text-green-600">{score}</span>
           </div>
         </div>
 
@@ -769,7 +769,7 @@ export const NotectorGame: React.FC = () => {
                       stroke={stroke}
                       strokeWidth={3}
                     />
-                    {(showNoteNames || noteState.status === 'correct' || noteState.status === 'missed') && (
+                    {showNoteNames && (
                       <text
                         x={x}
                         y={288}
