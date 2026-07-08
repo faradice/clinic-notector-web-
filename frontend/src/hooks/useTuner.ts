@@ -168,53 +168,72 @@ export const useTuner = (enabled: boolean) => {
 };
 
 /**
- * Normalized autocorrelation pitch detector (ACF2+), the well-proven approach
- * used by browser tuners. Returns frequency in Hz, or -1 when no clear pitch.
+ * Pitch detector using the McLeod Pitch Method (Normalized Square Difference
+ * Function). Unlike raw autocorrelation, the NSDF is normalized per lag, so it
+ * has no finite-buffer decay bias — the period peak lands in the right place,
+ * which matters most at low frequencies (large lags). Returns Hz, or -1.
  */
-function autoCorrelate(buf: Float32Array, sampleRate: number): number {
-  const SIZE = buf.length;
+export function autoCorrelate(buf: Float32Array, sampleRate: number): number {
+  const n = buf.length;
 
   let rms = 0;
-  for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
-  rms = Math.sqrt(rms / SIZE);
+  for (let i = 0; i < n; i++) rms += buf[i] * buf[i];
+  rms = Math.sqrt(rms / n);
   if (rms < 0.01) return -1; // too quiet — noise gate
 
-  // Trim the quiet edges of the buffer.
-  let r1 = 0;
-  let r2 = SIZE - 1;
-  const threshold = 0.2;
-  for (let i = 0; i < SIZE / 2; i++) {
-    if (Math.abs(buf[i]) < threshold) { r1 = i; break; }
-  }
-  for (let i = 1; i < SIZE / 2; i++) {
-    if (Math.abs(buf[SIZE - i]) < threshold) { r2 = SIZE - i; break; }
-  }
-
-  const trimmed = buf.subarray(r1, r2);
-  const n = trimmed.length;
-  const c = new Array(n).fill(0);
-  for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n - i; j++) c[i] += trimmed[j] * trimmed[j + i];
+  const maxLag = Math.floor(n / 2);
+  const nsdf = new Float32Array(maxLag);
+  for (let tau = 0; tau < maxLag; tau++) {
+    let acf = 0; // sum b[j]*b[j+tau]
+    let m = 0;   // sum b[j]^2 + b[j+tau]^2  (normalizer)
+    for (let j = 0; j + tau < n; j++) {
+      const a = buf[j];
+      const b = buf[j + tau];
+      acf += a * b;
+      m += a * a + b * b;
+    }
+    nsdf[tau] = m > 0 ? (2 * acf) / m : 0;
   }
 
-  // Skip the initial downslope, then find the highest peak.
-  let d = 0;
-  while (d < n - 1 && c[d] > c[d + 1]) d++;
-  let maxval = -1;
-  let maxpos = -1;
-  for (let i = d; i < n; i++) {
-    if (c[i] > maxval) { maxval = c[i]; maxpos = i; }
-  }
-  if (maxpos <= 0) return -1;
+  // Collect the local maxima of the NSDF, one per positive-going region,
+  // skipping the initial lag-0 lobe.
+  let tau = 1;
+  while (tau < maxLag && nsdf[tau] > 0) tau++; // past the first (lag-0) lobe
 
-  // Parabolic interpolation for sub-sample accuracy.
-  let T0 = maxpos;
-  const x1 = c[T0 - 1] ?? 0;
-  const x2 = c[T0];
-  const x3 = c[T0 + 1] ?? 0;
-  const a = (x1 + x3 - 2 * x2) / 2;
-  const b = (x3 - x1) / 2;
-  if (a !== 0) T0 = T0 - b / (2 * a);
+  let best = -1;      // position of highest key maximum
+  let bestVal = -1;
+  const maxima: number[] = [];
+  while (tau < maxLag) {
+    if (nsdf[tau] > 0) {
+      let localPos = tau;
+      let localVal = nsdf[tau];
+      while (tau < maxLag && nsdf[tau] > 0) {
+        if (nsdf[tau] > localVal) { localVal = nsdf[tau]; localPos = tau; }
+        tau++;
+      }
+      maxima.push(localPos);
+      if (localVal > bestVal) { bestVal = localVal; best = localPos; }
+    } else {
+      tau++;
+    }
+  }
+  if (best < 0 || bestVal < 0.3) return -1; // no confident pitch
+
+  // Pick the FIRST key maximum that clears a threshold near the strongest one
+  // (avoids octave-up errors from picking a later, taller harmonic peak).
+  const threshold = 0.9 * bestVal;
+  let chosen = best;
+  for (const pos of maxima) {
+    if (nsdf[pos] >= threshold) { chosen = pos; break; }
+  }
+
+  // Parabolic interpolation around the chosen peak for sub-sample accuracy.
+  let T0 = chosen;
+  const x1 = nsdf[T0 - 1] ?? nsdf[T0];
+  const x2 = nsdf[T0];
+  const x3 = nsdf[T0 + 1] ?? nsdf[T0];
+  const denom = 2 * (x1 + x3 - 2 * x2);
+  if (denom !== 0) T0 = T0 - (x3 - x1) / denom;
 
   const freq = sampleRate / T0;
   if (freq < 60 || freq > 1200) return -1; // outside guitar range
