@@ -71,8 +71,7 @@ export const NotectorGame: React.FC = () => {
   const [currentNoteIndex, setCurrentNoteIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [roundNumber, setRoundNumber] = useState(1);
-  const [bpm, setBpm] = useState(60);
-  const [noteBeats, setNoteBeats] = useState(2); // beats each note stays active (higher = more forgiving)
+  const [bpm, setBpm] = useState(30); // tempo: one metronome click per note; lower = more time per note
   const [showNoteNames, setShowNoteNames] = useState(false); // reveal note letters (toggle mid-practice)
   const [failedNotes, setFailedNotes] = useState<string[]>([]);
   const [currentSequence, setCurrentSequence] = useState<string[]>([]); // For beginner mode
@@ -265,7 +264,9 @@ export const NotectorGame: React.FC = () => {
       return;
     }
 
-    const beatDuration = (60 / bpm) * 1000 * noteBeats;
+    // One note per beat = one metronome click per note. Slower tempo → longer
+    // window to play each note (anywhere within it counts).
+    const beatDuration = (60 / bpm) * 1000;
 
     beatTimeoutRef.current = setTimeout(() => {
       // Check if current note was matched
@@ -429,35 +430,19 @@ export const NotectorGame: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <label className="text-sm font-semibold text-gray-700">BPM:</label>
+          <label className="text-sm font-semibold text-gray-700" title="One metronome click per note — lower = more time per note">
+            Tempo:
+          </label>
           <input
             type="number"
             value={bpm}
-            onChange={(e) => setBpm(parseInt(e.target.value) || 60)}
-            min="30"
+            onChange={(e) => setBpm(parseInt(e.target.value) || 30)}
+            min="15"
             max="180"
             disabled={gameState === 'playing'}
-            className="w-24 px-3 py-2 border border-gray-300 rounded-lg text-lg font-semibold"
+            className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-lg font-semibold"
           />
-        </div>
-
-        {/* Note length: how many beats each note stays active (higher = more time to play it) */}
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-semibold text-gray-700" title="How long each note stays active, in beats">
-            Note length:
-          </label>
-          <select
-            value={noteBeats}
-            onChange={(e) => setNoteBeats(parseFloat(e.target.value))}
-            disabled={gameState === 'playing'}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-base font-semibold"
-          >
-            <option value={1}>1 beat</option>
-            <option value={1.5}>1½ beats</option>
-            <option value={2}>2 beats</option>
-            <option value={3}>3 beats</option>
-            <option value={4}>4 beats</option>
-          </select>
+          <span className="text-xs text-gray-500">clicks/notes per min</span>
         </div>
 
         {/* Metronome tick volume */}
