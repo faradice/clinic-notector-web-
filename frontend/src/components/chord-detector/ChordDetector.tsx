@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useChordDetector, NOTE_NAMES } from '../../hooks/useChordDetector';
+import { ChordDiagram } from './ChordDiagram';
+import { shapeFor } from './chordShapes';
 
 export const ChordDetector: React.FC = () => {
   const [active, setActive] = useState(false);
@@ -8,6 +10,7 @@ export const ChordDetector: React.FC = () => {
   const chord = reading.hasSignal ? reading.chord : null;
   const chordTones = new Set(chord ? chord.intervals.map((iv) => (chord.root + iv) % 12) : []);
   const confident = chord != null && chord.score >= 0.6;
+  const shape = confident ? shapeFor(chord!.name) : null;
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-slate-900 text-slate-100 p-6">
@@ -28,6 +31,20 @@ export const ChordDetector: React.FC = () => {
         <div className="h-5 mt-1 text-sm text-slate-500">
           {!isListening ? '' : !reading.hasSignal ? 'Play a chord…' : confident ? '' : '(unsure)'}
         </div>
+      </div>
+
+      {/* Fretboard diagram for the detected chord (a standard shape) */}
+      <div className="h-52 mb-4 flex flex-col items-center justify-center">
+        {shape ? (
+          <>
+            <ChordDiagram frets={shape} />
+            <span className="mt-1 text-xs text-slate-500">a common shape for {chord!.name}</span>
+          </>
+        ) : (
+          <span className="text-xs text-slate-600">
+            {confident ? 'no stock diagram for this chord' : ''}
+          </span>
+        )}
       </div>
 
       {/* Chroma bars — energy per pitch class, chord tones highlighted */}
