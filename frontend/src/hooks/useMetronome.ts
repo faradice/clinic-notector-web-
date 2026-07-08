@@ -3,8 +3,9 @@ import * as Tone from 'tone';
 
 /**
  * Metronome hook using Tone.js Transport
+ * @param volume tick loudness as a linear gain 0..1 (0 = muted)
  */
-export const useMetronome = (bpm: number, enabled: boolean) => {
+export const useMetronome = (bpm: number, enabled: boolean, volume: number = 1) => {
   const synthRef = useRef<Tone.MembraneSynth | null>(null);
   const eventIdRef = useRef<number | null>(null);
 
@@ -24,11 +25,20 @@ export const useMetronome = (bpm: number, enabled: boolean) => {
         attackCurve: 'exponential',
       },
     }).toDestination();
+    synthRef.current.volume.value = Tone.gainToDb(volume);
 
     return () => {
       synthRef.current?.dispose();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Apply tick volume changes live (gainToDb(0) === -Infinity → silent).
+  useEffect(() => {
+    if (synthRef.current) {
+      synthRef.current.volume.value = Tone.gainToDb(volume);
+    }
+  }, [volume]);
 
   const start = useCallback(async () => {
     if (!synthRef.current) return;

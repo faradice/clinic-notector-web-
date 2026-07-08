@@ -67,6 +67,8 @@ export const NotectorGame: React.FC = () => {
   const [isRepeatingBar, setIsRepeatingBar] = useState(false); // Beginner: is the current bar a repeat?
   // How the player answers: 'listen' = app hears the guitar via mic; 'pick' = type the note name.
   const [inputMode, setInputMode] = useState<'pick' | 'listen'>('listen');
+  const [tickVolume, setTickVolume] = useState(0.7); // metronome tick volume, 0..1 (0 = muted)
+  const lastTickVolumeRef = useRef(0.7); // remembers level to restore when unmuting
 
   const beatTimeoutRef = useRef<NodeJS.Timeout>();
   const pauseTimeoutRef = useRef<NodeJS.Timeout>();
@@ -77,7 +79,7 @@ export const NotectorGame: React.FC = () => {
   const currentSequenceRef = useRef<string[]>([]);
 
   const { detectedNote, isListening, matchesNote } = usePitchDetection(gameState === 'playing' && inputMode === 'listen');
-  useMetronome(bpm, gameState === 'playing');
+  useMetronome(bpm, gameState === 'playing', tickVolume);
 
   const levelConfig = LEVELS[level];
 
@@ -374,6 +376,40 @@ export const NotectorGame: React.FC = () => {
             max="180"
             disabled={gameState === 'playing' || gameState === 'paused'}
             className="w-24 px-3 py-2 border border-gray-300 rounded-lg text-lg font-semibold"
+          />
+        </div>
+
+        {/* Metronome tick volume */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-semibold text-gray-700">Tick:</label>
+          <button
+            type="button"
+            onClick={() => {
+              if (tickVolume > 0) {
+                lastTickVolumeRef.current = tickVolume;
+                setTickVolume(0);
+              } else {
+                setTickVolume(lastTickVolumeRef.current || 0.7);
+              }
+            }}
+            title={tickVolume > 0 ? 'Mute metronome tick' : 'Unmute metronome tick'}
+            className="px-2 py-1.5 text-xl rounded-lg border border-gray-300 hover:bg-gray-50"
+          >
+            {tickVolume > 0 ? '🔊' : '🔇'}
+          </button>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={tickVolume}
+            onChange={(e) => {
+              const v = parseFloat(e.target.value);
+              setTickVolume(v);
+              if (v > 0) lastTickVolumeRef.current = v;
+            }}
+            title="Metronome tick volume"
+            className="w-24 accent-blue-500"
           />
         </div>
 
