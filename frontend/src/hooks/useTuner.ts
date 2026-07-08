@@ -80,6 +80,8 @@ export const useTuner = (enabled: boolean) => {
   const rafRef = useRef<number | undefined>(undefined);
   const bufferRef = useRef<Float32Array<ArrayBuffer> | null>(null);
   const smoothedFreqRef = useRef(0);
+  const historyRef = useRef<number[]>([]); // recent raw freqs for median filtering
+  const silentFramesRef = useRef(0);       // consecutive frames with no pitch
 
   const start = useCallback(async () => {
     try {
@@ -112,6 +114,8 @@ export const useTuner = (enabled: boolean) => {
     audioContextRef.current = null;
     analyserRef.current = null;
     smoothedFreqRef.current = 0;
+    historyRef.current = [];
+    silentFramesRef.current = 0;
     setIsListening(false);
     setReading(EMPTY);
   }, []);
@@ -132,13 +136,22 @@ export const useTuner = (enabled: boolean) => {
         analyser.getFloatTimeDomainData(buf);
         const freq = autoCorrelate(buf, ctx.sampleRate);
         if (freq > 0) {
-          // Light exponential smoothing to steady the needle.
+          silentFramesRef.current = 0;
+          // Median of recent readings rejects outlier/octave-jump spikes...
+          const hist = historyRef.current;
+          hist.push(freq);
+          if (hist.length > 7) hist.shift();
+          const median = [...hist].sort((a, b) => a - b)[Math.floor(hist.length / 2)];
+          // ...then EMA steadies what's left.
           const prev = smoothedFreqRef.current;
-          const next = prev > 0 ? prev * 0.7 + freq * 0.3 : freq;
+          const next = prev > 0 ? prev * 0.8 + median * 0.2 : median;
           smoothedFreqRef.current = next;
           setReading(freqToReading(next));
-        } else {
+        } else if (++silentFramesRef.current > 12) {
+          // Hold the last reading through brief dropouts (decaying string);
+          // only clear after sustained silence to avoid flicker.
           smoothedFreqRef.current = 0;
+          historyRef.current = [];
           setReading(EMPTY);
         }
       }
