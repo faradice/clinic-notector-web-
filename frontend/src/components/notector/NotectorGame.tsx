@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { usePitchDetection } from '../../hooks/usePitchDetection';
+import { useTuner } from '../../hooks/useTuner';
 import { useMetronome } from '../../hooks/useMetronome';
 import { customBarApi, type CustomBar } from '../../api/customBars';
 
@@ -93,7 +93,19 @@ export const NotectorGame: React.FC = () => {
   const notesRef = useRef<NoteState[]>([]);
   const currentSequenceRef = useRef<string[]>([]);
 
-  const { detectedNote, isListening, matchesNote } = usePitchDetection(gameState === 'playing' && inputMode === 'listen');
+  // Listen mode shares the tuner's detector (accurate, low-string capable).
+  const { reading, isListening } = useTuner(gameState === 'playing' && inputMode === 'listen');
+  const detectedNote = reading.note ? `${reading.note}${reading.octave}` : null;
+  const matchesNote = useCallback(
+    (target: string) => {
+      if (!reading.note || reading.octave == null) return false;
+      // Nearest-note match (target like 'C4') gives ~±50¢ slack while playing.
+      const letter = target.replace(/[0-9]/g, '');
+      const octave = parseInt(target.replace(/[^0-9]/g, ''), 10);
+      return reading.note === letter && reading.octave === octave;
+    },
+    [reading],
+  );
   useMetronome(bpm, gameState === 'playing', tickVolume);
 
   const levelConfig = LEVELS[level];

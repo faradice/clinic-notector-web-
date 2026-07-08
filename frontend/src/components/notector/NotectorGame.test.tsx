@@ -4,12 +4,10 @@ import { NotectorGame } from './NotectorGame'
 
 // The game's audio hooks need a microphone / AudioContext, neither of which
 // exists in jsdom. Mock them so the component renders purely.
-vi.mock('../../hooks/usePitchDetection', () => ({
-  usePitchDetection: () => ({
-    detectedNote: null,
-    detectedFrequency: 0,
+vi.mock('../../hooks/useTuner', () => ({
+  useTuner: () => ({
+    reading: { frequency: 0, note: null, octave: null, midi: null, cents: 0 },
     isListening: false,
-    matchesNote: () => false,
   }),
 }))
 vi.mock('../../hooks/useMetronome', () => ({
