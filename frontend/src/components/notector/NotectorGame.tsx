@@ -65,7 +65,7 @@ interface NoteState {
 }
 
 export const NotectorGame: React.FC = () => {
-  const [gameState, setGameState] = useState<'idle' | 'playing' | 'paused'>('idle');
+  const [gameState, setGameState] = useState<'idle' | 'playing'>('idle');
   const [level, setLevel] = useState<DifficultyLevel>('beginner');
   const [notes, setNotes] = useState<NoteState[]>([]);
   const [currentNoteIndex, setCurrentNoteIndex] = useState(0);
@@ -88,7 +88,6 @@ export const NotectorGame: React.FC = () => {
   const [builderName, setBuilderName] = useState('');
 
   const beatTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const pauseTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const matchedRef = useRef(false);
   // Refs mirror the latest state so the setTimeout-driven beat chain (which
   // closes over stale render values) always reads current data.
@@ -309,9 +308,6 @@ export const NotectorGame: React.FC = () => {
     if (beatTimeoutRef.current) {
       clearTimeout(beatTimeoutRef.current);
     }
-    if (pauseTimeoutRef.current) {
-      clearTimeout(pauseTimeoutRef.current);
-    }
   }, []);
 
   // Check for note matches
@@ -380,7 +376,6 @@ export const NotectorGame: React.FC = () => {
   useEffect(() => {
     return () => {
       if (beatTimeoutRef.current) clearTimeout(beatTimeoutRef.current);
-      if (pauseTimeoutRef.current) clearTimeout(pauseTimeoutRef.current);
     };
   }, []);
 
@@ -396,7 +391,7 @@ export const NotectorGame: React.FC = () => {
           <select
             value={level}
             onChange={(e) => setLevel(e.target.value as DifficultyLevel)}
-            disabled={gameState === 'playing' || gameState === 'paused'}
+            disabled={gameState === 'playing'}
             className="px-4 py-2 border border-gray-300 rounded-lg text-base font-semibold"
           >
             {Object.entries(LEVELS).map(([key, config]) => (
@@ -414,7 +409,7 @@ export const NotectorGame: React.FC = () => {
           <div className="flex rounded-lg overflow-hidden border border-gray-300">
             <button
               onClick={() => setInputMode('pick')}
-              disabled={gameState === 'playing' || gameState === 'paused'}
+              disabled={gameState === 'playing'}
               className={`px-3 py-2 text-sm font-semibold transition-colors disabled:opacity-60 ${
                 inputMode === 'pick' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
@@ -423,7 +418,7 @@ export const NotectorGame: React.FC = () => {
             </button>
             <button
               onClick={() => setInputMode('listen')}
-              disabled={gameState === 'playing' || gameState === 'paused'}
+              disabled={gameState === 'playing'}
               className={`px-3 py-2 text-sm font-semibold border-l border-gray-300 transition-colors disabled:opacity-60 ${
                 inputMode === 'listen' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
@@ -441,7 +436,7 @@ export const NotectorGame: React.FC = () => {
             onChange={(e) => setBpm(parseInt(e.target.value) || 60)}
             min="30"
             max="180"
-            disabled={gameState === 'playing' || gameState === 'paused'}
+            disabled={gameState === 'playing'}
             className="w-24 px-3 py-2 border border-gray-300 rounded-lg text-lg font-semibold"
           />
         </div>
@@ -454,7 +449,7 @@ export const NotectorGame: React.FC = () => {
           <select
             value={noteBeats}
             onChange={(e) => setNoteBeats(parseFloat(e.target.value))}
-            disabled={gameState === 'playing' || gameState === 'paused'}
+            disabled={gameState === 'playing'}
             className="px-3 py-2 border border-gray-300 rounded-lg text-base font-semibold"
           >
             <option value={1}>1 beat</option>
@@ -525,14 +520,14 @@ export const NotectorGame: React.FC = () => {
         </div>
 
         {/* Muscle Memory: same bar loops forever */}
-        {levelConfig.fixedBar && (gameState === 'playing' || gameState === 'paused') && (
+        {levelConfig.fixedBar && (gameState === 'playing') && (
           <span className="px-3 py-1.5 rounded-full bg-purple-100 text-purple-700 text-sm font-semibold border border-purple-300">
             🔁 Looping this bar
           </span>
         )}
 
         {/* Repeat indicator (beginner-style levels only) */}
-        {levelConfig.repeatUntilPerfect && (gameState === 'playing' || gameState === 'paused') && (
+        {levelConfig.repeatUntilPerfect && (gameState === 'playing') && (
           isRepeatingBar ? (
             <span className="px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 text-sm font-semibold border border-orange-300">
               🔁 Repeating this bar
@@ -553,7 +548,7 @@ export const NotectorGame: React.FC = () => {
           </button>
         )}
 
-        {(gameState === 'playing' || gameState === 'paused') && (
+        {(gameState === 'playing') && (
           <button
             onClick={stopGame}
             className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white text-lg font-semibold rounded-lg transition-colors"
@@ -563,14 +558,14 @@ export const NotectorGame: React.FC = () => {
         )}
 
         <div className="ml-auto flex items-center gap-2 text-gray-600">
-          {import.meta.env.DEV && (gameState === 'playing' || gameState === 'paused') && (
+          {import.meta.env.DEV && (gameState === 'playing') && (
             <span className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-purple-600 text-white text-sm font-mono font-bold border-2 border-purple-800 shadow animate-pulse">
               🐞 DEV — press
               <kbd className="px-1.5 py-0.5 bg-white/25 rounded font-bold">M</kbd>
               to match
             </span>
           )}
-          {inputMode === 'pick' && (gameState === 'playing' || gameState === 'paused') && (
+          {inputMode === 'pick' && (gameState === 'playing') && (
             <span className="flex items-center gap-2 font-medium">
               <span className="text-2xl">⌨️</span>
               Type the note name
@@ -829,29 +824,6 @@ export const NotectorGame: React.FC = () => {
                   {inputMode === 'pick'
                     ? 'Read the blue note and type its name (C D E F G A B)'
                     : "Watch for the blue note - that's your cue to play!"}
-                </p>
-              </div>
-            )}
-
-            {gameState === 'paused' && (
-              <div className="mt-8 text-center">
-                <p className="text-3xl font-bold text-blue-600 animate-pulse">
-                  Get Ready for Round {roundNumber + 1}...
-                </p>
-                <p className="text-lg text-gray-600 mt-2">
-                  {notes.every(n => n.status === 'correct') ? (
-                    <span className="text-green-600 font-semibold">Perfect! All notes correct! 🎉</span>
-                  ) : (
-                    levelConfig.repeatUntilPerfect ? (
-                      <span className="text-orange-600 font-semibold">
-                        Repeating same notes until all correct
-                      </span>
-                    ) : (
-                      <span className="text-gray-600">
-                        Missed notes will appear in next round
-                      </span>
-                    )
-                  )}
                 </p>
               </div>
             )}
