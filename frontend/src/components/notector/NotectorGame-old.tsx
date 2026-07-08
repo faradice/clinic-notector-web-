@@ -20,7 +20,7 @@ export const NotectorGame: React.FC = () => {
   const [topScores, setTopScores] = useState<GameScore[]>([]);
   const [metronomeEnabled, setMetronomeEnabled] = useState(true);
 
-  const matchTimeoutRef = useRef<NodeJS.Timeout>();
+  const matchTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const { detectedNote, detectedFrequency, isListening, matchesNote } = usePitchDetection(
     gameState === 'playing'

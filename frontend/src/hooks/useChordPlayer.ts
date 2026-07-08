@@ -73,12 +73,8 @@ function calculateNote(stringNumber: number, fret: number): string {
     return openNote;
   }
 
-  // Parse note and octave
-  const match = openNote.match(/([A-G]#?)(\d+)/);
-  if (!match) return openNote;
-
-  const [, noteName, octaveStr] = match;
-  const octave = parseInt(octaveStr);
+  // Validate note format (e.g. "E2", "G#3")
+  if (!openNote.match(/([A-G]#?)(\d+)/)) return openNote;
 
   // Calculate new note
   return Tone.Frequency(openNote).transpose(fret).toNote();

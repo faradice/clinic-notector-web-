@@ -70,8 +70,8 @@ export const NotectorGame: React.FC = () => {
   const [tickVolume, setTickVolume] = useState(0.7); // metronome tick volume, 0..1 (0 = muted)
   const lastTickVolumeRef = useRef(0.7); // remembers level to restore when unmuting
 
-  const beatTimeoutRef = useRef<NodeJS.Timeout>();
-  const pauseTimeoutRef = useRef<NodeJS.Timeout>();
+  const beatTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const pauseTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const matchedRef = useRef(false);
   // Refs mirror the latest state so the setTimeout-driven beat chain (which
   // closes over stale render values) always reads current data.

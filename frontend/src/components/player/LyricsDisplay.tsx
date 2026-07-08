@@ -76,7 +76,7 @@ const LyricsLine: React.FC<LyricsLineProps> = ({
     <div className="lyrics-line relative mb-8">
       {/* Chord layer (absolute positioning) */}
       <div className="absolute top-0 left-0 w-full" style={{ transform: 'translateY(-1.5em)' }}>
-        {words.map((word, wordIndex) => {
+        {words.map((_word, wordIndex) => {
           const wordChords = lineChords.filter(
             (cp) => cp.wordNumber === wordIndex
           );

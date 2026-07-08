@@ -20,8 +20,8 @@ export const usePitchDetection = (enabled: boolean) => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
-  const animationFrameRef = useRef<number>();
-  const bufferRef = useRef<Float32Array | null>(null);
+  const animationFrameRef = useRef<number | undefined>(undefined);
+  const bufferRef = useRef<Float32Array<ArrayBuffer> | null>(null);
 
   const initAudio = useCallback(async () => {
     try {

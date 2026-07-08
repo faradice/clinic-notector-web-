@@ -11,12 +11,12 @@ interface AutoScrollOptions {
  * Scrolls 1px every `bpm` milliseconds using requestAnimationFrame for smoothness
  */
 export const useAutoScroll = (
-  containerRef: React.RefObject<HTMLElement>,
+  containerRef: React.RefObject<HTMLElement | null>,
   options: AutoScrollOptions
 ) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | undefined>(undefined);
   const lastUpdateRef = useRef<number>(0);
   const startTimeRef = useRef<number>(0);
   const pausedScrollRef = useRef<number>(0);

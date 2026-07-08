@@ -19,7 +19,7 @@ export const NotectorGame: React.FC = () => {
   const [bpm, setBpm] = useState(60);
   const [failedNotes, setFailedNotes] = useState<string[]>([]);
 
-  const beatTimeoutRef = useRef<NodeJS.Timeout>();
+  const beatTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const matchedRef = useRef(false);
 
   const { detectedNote, isListening, matchesNote } = usePitchDetection(gameState === 'playing');
