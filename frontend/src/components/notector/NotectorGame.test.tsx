@@ -15,6 +15,14 @@ vi.mock('../../hooks/usePitchDetection', () => ({
 vi.mock('../../hooks/useMetronome', () => ({
   useMetronome: () => {},
 }))
+// No backend in tests — stub the custom-bars API.
+vi.mock('../../api/customBars', () => ({
+  customBarApi: {
+    getAll: () => Promise.resolve([]),
+    create: (bar: unknown) => Promise.resolve(bar),
+    delete: () => Promise.resolve(),
+  },
+}))
 
 /** Put the game into Pick mode and start a round. */
 function startInPickMode() {
@@ -80,5 +88,16 @@ describe('NotectorGame — answer mode toggle', () => {
     render(<NotectorGame />)
     expect(screen.getByRole('button', { name: /listen/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /pick/i })).toBeInTheDocument()
+  })
+})
+
+describe('NotectorGame — Muscle Memory mode', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('shows the bar builder and source picker when Muscle Memory is selected', () => {
+    render(<NotectorGame />)
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'muscle' } })
+    expect(screen.getByText(/Create a bar/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Random bar/i })).toBeInTheDocument()
   })
 })

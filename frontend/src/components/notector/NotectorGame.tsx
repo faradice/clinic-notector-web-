@@ -1,21 +1,31 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePitchDetection } from '../../hooks/usePitchDetection';
 import { useMetronome } from '../../hooks/useMetronome';
+import { customBarApi, type CustomBar } from '../../api/customBars';
 
 // Basic notes for highest 3 guitar strings practice
 const BASIC_NOTES = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4'];
+const BAR_LENGTH = 4; // notes per bar shown on the staff
 
 // Difficulty levels
-type DifficultyLevel = 'beginner' | 'elementary' | 'intermediate' | 'advanced' | 'expert';
+type DifficultyLevel = 'muscle' | 'beginner' | 'elementary' | 'intermediate' | 'advanced' | 'expert';
 
 interface LevelConfig {
   name: string;
   description: string;
   noteCount: number;
   repeatUntilPerfect: boolean;
+  fixedBar?: boolean; // always replay the exact same bar (muscle-memory practice)
 }
 
 const LEVELS: Record<DifficultyLevel, LevelConfig> = {
+  muscle: {
+    name: 'Muscle Memory',
+    description: 'One bar, looped non-stop',
+    noteCount: 4,
+    repeatUntilPerfect: false,
+    fixedBar: true,
+  },
   beginner: {
     name: 'Beginner',
     description: 'Same 4 notes until all correct',
@@ -69,6 +79,11 @@ export const NotectorGame: React.FC = () => {
   const [inputMode, setInputMode] = useState<'pick' | 'listen'>('listen');
   const [tickVolume, setTickVolume] = useState(0.7); // metronome tick volume, 0..1 (0 = muted)
   const lastTickVolumeRef = useRef(0.7); // remembers level to restore when unmuting
+  // Muscle Memory custom bars (persisted in the backend)
+  const [savedBars, setSavedBars] = useState<CustomBar[]>([]);
+  const [barSource, setBarSource] = useState<number | 'random'>('random'); // selected bar id, or random
+  const [builderNotes, setBuilderNotes] = useState<string[]>([]); // bar being composed
+  const [builderName, setBuilderName] = useState('');
 
   const beatTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const pauseTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -91,17 +106,63 @@ export const NotectorGame: React.FC = () => {
     currentSequenceRef.current = currentSequence;
   }, [currentSequence]);
 
+  // Load saved custom bars once.
+  const loadBars = useCallback(async () => {
+    try {
+      setSavedBars(await customBarApi.getAll());
+    } catch (e) {
+      console.error('Failed to load custom bars', e);
+    }
+  }, []);
+  useEffect(() => {
+    loadBars();
+  }, [loadBars]);
+
+  // Choose which bar Muscle Memory loops: a saved bar (by id) or a fresh random one.
+  const selectBarSource = useCallback((source: number | 'random') => {
+    setBarSource(source);
+    if (source === 'random') {
+      setCurrentSequence([]); // cleared → startGame generates a random bar
+    } else {
+      const bar = savedBars.find(b => b.id === source);
+      if (bar) setCurrentSequence(bar.notes.slice(0, BAR_LENGTH));
+    }
+  }, [savedBars]);
+
+  const saveBuilderBar = useCallback(async () => {
+    if (builderNotes.length === 0 || !builderName.trim()) return;
+    try {
+      const created = await customBarApi.create({ name: builderName.trim(), notes: builderNotes });
+      setBuilderNotes([]);
+      setBuilderName('');
+      await loadBars();
+      if (created.id != null) selectBarSource(created.id);
+    } catch (e) {
+      console.error('Failed to save custom bar', e);
+    }
+  }, [builderNotes, builderName, loadBars, selectBarSource]);
+
+  const deleteBar = useCallback(async (id: number) => {
+    try {
+      await customBarApi.delete(id);
+      if (barSource === id) selectBarSource('random');
+      await loadBars();
+    } catch (e) {
+      console.error('Failed to delete custom bar', e);
+    }
+  }, [barSource, loadBars, selectBarSource]);
+
   // Generate notes based on level
   const generateNotes = useCallback((useExistingSequence = false) => {
     const newNotes: NoteState[] = [];
     let notesToUse: string[];
 
-    if (levelConfig.repeatUntilPerfect && useExistingSequence && currentSequenceRef.current.length > 0) {
-      // Beginner mode: reuse the exact same sequence, same order
+    if ((levelConfig.repeatUntilPerfect || levelConfig.fixedBar) && useExistingSequence && currentSequenceRef.current.length > 0) {
+      // Beginner / Muscle Memory: reuse the exact same sequence, same order
       notesToUse = [...currentSequenceRef.current];
     } else {
       // Generate new sequence
-      if (!levelConfig.repeatUntilPerfect) {
+      if (!levelConfig.repeatUntilPerfect && !levelConfig.fixedBar) {
         // Include failed notes from previous round
         notesToUse = [...failedNotes];
       } else {
@@ -117,8 +178,8 @@ export const NotectorGame: React.FC = () => {
       // Shuffle
       notesToUse = notesToUse.sort(() => Math.random() - 0.5).slice(0, levelConfig.noteCount);
 
-      // Save sequence for beginner mode
-      if (levelConfig.repeatUntilPerfect) {
+      // Remember the sequence for modes that replay the same bar
+      if (levelConfig.repeatUntilPerfect || levelConfig.fixedBar) {
         setCurrentSequence(notesToUse);
       }
     }
@@ -136,7 +197,10 @@ export const NotectorGame: React.FC = () => {
   }, [levelConfig, failedNotes]);
 
   const startGame = useCallback(() => {
-    const newNotes = generateNotes(false);
+    // Muscle Memory: a saved bar stays fixed; "Random" re-rolls a fresh bar each start.
+    const reuseExisting =
+      !!levelConfig.fixedBar && barSource !== 'random' && currentSequenceRef.current.length > 0;
+    const newNotes = generateNotes(reuseExisting);
     setNotes(newNotes);
     setCurrentNoteIndex(0);
     setScore(0);
@@ -153,14 +217,18 @@ export const NotectorGame: React.FC = () => {
 
     // Schedule beat progression
     scheduleBeat(0);
-  }, [generateNotes]);
+  }, [generateNotes, levelConfig, barSource]);
 
   const startNextRound = useCallback(() => {
     // Read the round's final statuses from the ref (the state closure here is stale).
     const roundNotes = notesRef.current;
     const allCorrect = roundNotes.length > 0 && roundNotes.every(n => n.status === 'correct');
 
-    if (levelConfig.repeatUntilPerfect && !allCorrect) {
+    if (levelConfig.fixedBar) {
+      // Muscle Memory: always replay the exact same bar, non-stop
+      const newNotes = generateNotes(true);
+      setNotes(newNotes);
+    } else if (levelConfig.repeatUntilPerfect && !allCorrect) {
       // Beginner mode: keep the exact same bar until every note is correct
       const newNotes = generateNotes(true);
       setNotes(newNotes);
@@ -229,12 +297,9 @@ export const NotectorGame: React.FC = () => {
   };
 
   const finishRound = () => {
-    setGameState('paused');
-
-    // Short pause before next round (2 seconds)
-    pauseTimeoutRef.current = setTimeout(() => {
-      startNextRound();
-    }, 2000);
+    // Continuous play: roll straight into the next round on the next beat,
+    // no pause — the metronome and notes never stop.
+    startNextRound();
   };
 
   const stopGame = useCallback(() => {
@@ -424,6 +489,13 @@ export const NotectorGame: React.FC = () => {
           </div>
         </div>
 
+        {/* Muscle Memory: same bar loops forever */}
+        {levelConfig.fixedBar && (gameState === 'playing' || gameState === 'paused') && (
+          <span className="px-3 py-1.5 rounded-full bg-purple-100 text-purple-700 text-sm font-semibold border border-purple-300">
+            🔁 Looping this bar
+          </span>
+        )}
+
         {/* Repeat indicator (beginner-style levels only) */}
         {levelConfig.repeatUntilPerfect && (gameState === 'playing' || gameState === 'paused') && (
           isRepeatingBar ? (
@@ -484,19 +556,92 @@ export const NotectorGame: React.FC = () => {
       {/* Main Game Area */}
       <div className="flex-1 flex items-center justify-center p-4">
         {gameState === 'idle' && notes.length === 0 ? (
-          <div className="text-center">
+          <div className="text-center max-h-full overflow-y-auto w-full py-6">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">Notector Practice</h2>
             <p className="text-xl text-gray-600 mb-8">
               Practice notes C, D, E, F, G, A, B on the highest 3 strings
             </p>
-            <div className="space-y-3 text-left max-w-2xl mx-auto">
-              {Object.entries(LEVELS).map(([key, config]) => (
-                <div key={key} className="p-4 bg-white rounded-lg border border-gray-300">
-                  <div className="font-semibold text-gray-900">{config.name}</div>
-                  <div className="text-gray-600">{config.description}</div>
+
+            {level === 'muscle' ? (
+              <div className="max-w-2xl mx-auto text-left space-y-5">
+                {/* Which bar to loop */}
+                <div className="p-4 bg-white rounded-lg border border-gray-300">
+                  <div className="font-semibold text-gray-900 mb-2">Which bar to loop?</div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => selectBarSource('random')}
+                      className={`px-3 py-2 rounded-lg border text-sm font-semibold ${barSource === 'random' ? 'bg-purple-500 text-white border-purple-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+                    >
+                      🎲 Random bar
+                    </button>
+                    {savedBars.map((bar) => (
+                      <span key={bar.id} className={`flex items-center rounded-lg border ${barSource === bar.id ? 'bg-purple-500 text-white border-purple-600' : 'bg-white text-gray-700 border-gray-300'}`}>
+                        <button onClick={() => selectBarSource(bar.id!)} className="px-3 py-2 text-sm font-semibold">
+                          {bar.name} <span className="opacity-70">({bar.notes.map((n) => n.replace(/[0-9]/g, '')).join(' ')})</span>
+                        </button>
+                        <button onClick={() => deleteBar(bar.id!)} title="Delete bar" className="px-2 py-2 text-sm hover:text-red-500">🗑</button>
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-sm text-gray-500 mt-2">
+                    {barSource === 'random'
+                      ? 'A fresh random 4-note bar is rolled when you start, then loops non-stop.'
+                      : 'This saved bar loops non-stop so you can drill it into muscle memory.'}
+                  </p>
                 </div>
-              ))}
-            </div>
+
+                {/* Create a bar */}
+                <div className="p-4 bg-white rounded-lg border border-gray-300">
+                  <div className="font-semibold text-gray-900 mb-2">Create a bar ({BAR_LENGTH} notes)</div>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {BASIC_NOTES.map((note) => (
+                      <button
+                        key={note}
+                        onClick={() => setBuilderNotes((prev) => (prev.length < BAR_LENGTH ? [...prev, note] : prev))}
+                        disabled={builderNotes.length >= BAR_LENGTH}
+                        className="w-10 h-10 rounded-lg border border-gray-300 font-bold hover:bg-gray-50 disabled:opacity-40"
+                      >
+                        {note.replace(/[0-9]/g, '')}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-sm text-gray-600">Sequence:</span>
+                    <span className="font-mono font-bold text-lg">
+                      {builderNotes.length ? builderNotes.map((n) => n.replace(/[0-9]/g, '')).join(' · ') : '—'}
+                    </span>
+                    <button onClick={() => setBuilderNotes((prev) => prev.slice(0, -1))} disabled={!builderNotes.length} title="Remove last" className="ml-auto px-2 py-1 text-sm rounded border border-gray-300 disabled:opacity-40">⌫</button>
+                    <button onClick={() => setBuilderNotes([])} disabled={!builderNotes.length} className="px-2 py-1 text-sm rounded border border-gray-300 disabled:opacity-40">Clear</button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={builderName}
+                      onChange={(e) => setBuilderName(e.target.value)}
+                      placeholder="Bar name"
+                      maxLength={100}
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm flex-1"
+                    />
+                    <button
+                      onClick={saveBuilderBar}
+                      disabled={builderNotes.length === 0 || !builderName.trim()}
+                      className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-lg disabled:opacity-40"
+                    >
+                      Save bar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3 text-left max-w-2xl mx-auto">
+                {Object.entries(LEVELS).map(([key, config]) => (
+                  <div key={key} className="p-4 bg-white rounded-lg border border-gray-300">
+                    <div className="font-semibold text-gray-900">{config.name}</div>
+                    <div className="text-gray-600">{config.description}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <div className="w-full max-w-[1500px]">
