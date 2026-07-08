@@ -96,7 +96,9 @@ describe('NotectorGame — Muscle Memory mode', () => {
 
   it('shows the bar builder and source picker when Muscle Memory is selected', () => {
     render(<NotectorGame />)
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'muscle' } })
+    // The Level dropdown is the first combobox (Note length is the second).
+    const levelSelect = screen.getAllByRole('combobox')[0]
+    fireEvent.change(levelSelect, { target: { value: 'muscle' } })
     expect(screen.getByText(/Create a bar/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Random bar/i })).toBeInTheDocument()
   })

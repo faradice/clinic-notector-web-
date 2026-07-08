@@ -72,6 +72,8 @@ export const NotectorGame: React.FC = () => {
   const [score, setScore] = useState(0);
   const [roundNumber, setRoundNumber] = useState(1);
   const [bpm, setBpm] = useState(60);
+  const [noteBeats, setNoteBeats] = useState(2); // beats each note stays active (higher = more forgiving)
+  const [showNoteNames, setShowNoteNames] = useState(false); // reveal note letters (toggle mid-practice)
   const [failedNotes, setFailedNotes] = useState<string[]>([]);
   const [currentSequence, setCurrentSequence] = useState<string[]>([]); // For beginner mode
   const [isRepeatingBar, setIsRepeatingBar] = useState(false); // Beginner: is the current bar a repeat?
@@ -264,7 +266,7 @@ export const NotectorGame: React.FC = () => {
       return;
     }
 
-    const beatDuration = (60 / bpm) * 1000;
+    const beatDuration = (60 / bpm) * 1000 * noteBeats;
 
     beatTimeoutRef.current = setTimeout(() => {
       // Check if current note was matched
@@ -444,6 +446,25 @@ export const NotectorGame: React.FC = () => {
           />
         </div>
 
+        {/* Note length: how many beats each note stays active (higher = more time to play it) */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-semibold text-gray-700" title="How long each note stays active, in beats">
+            Note length:
+          </label>
+          <select
+            value={noteBeats}
+            onChange={(e) => setNoteBeats(parseFloat(e.target.value))}
+            disabled={gameState === 'playing' || gameState === 'paused'}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-base font-semibold"
+          >
+            <option value={1}>1 beat</option>
+            <option value={1.5}>1½ beats</option>
+            <option value={2}>2 beats</option>
+            <option value={3}>3 beats</option>
+            <option value={4}>4 beats</option>
+          </select>
+        </div>
+
         {/* Metronome tick volume */}
         <div className="flex items-center gap-2">
           <label className="text-sm font-semibold text-gray-700">Tick:</label>
@@ -477,6 +498,20 @@ export const NotectorGame: React.FC = () => {
             className="w-24 accent-blue-500"
           />
         </div>
+
+        {/* Show/hide note names — toggleable any time, even mid-practice */}
+        <button
+          type="button"
+          onClick={() => setShowNoteNames((v) => !v)}
+          title="Show or hide the note names under each note"
+          className={`px-3 py-2 rounded-lg border text-sm font-semibold transition-colors ${
+            showNoteNames
+              ? 'bg-blue-500 text-white border-blue-600'
+              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          🔤 Names: {showNoteNames ? 'On' : 'Off'}
+        </button>
 
         <div className="flex items-center gap-4">
           <div className="text-sm">
@@ -742,7 +777,7 @@ export const NotectorGame: React.FC = () => {
                       stroke={stroke}
                       strokeWidth={3}
                     />
-                    {(noteState.status === 'correct' || noteState.status === 'missed') && (
+                    {(showNoteNames || noteState.status === 'correct' || noteState.status === 'missed') && (
                       <text
                         x={x}
                         y={288}
