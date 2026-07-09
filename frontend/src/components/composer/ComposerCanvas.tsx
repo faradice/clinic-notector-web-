@@ -7,7 +7,8 @@ import type { Workspace, WorkspaceCard, CardPositionUpdate } from '../../api/wor
 import { workspaceApi } from '../../api/workspaces';
 import { ChordCard } from './ChordCard';
 import { MiniChordViewer } from './MiniChordViewer';
-import { chordFromName, normalizeChordName } from './chordFromName';
+import { chordFromName, normalizeChordName, samePositions } from './chordFromName';
+import { KEYS, progressionsForMode, chordsFor } from './progressions';
 
 /** A chord in the sidebar library — a @dnd-kit draggable source. */
 const LibraryChordItem: React.FC<{ chord: Chord }> = ({ chord }) => {
@@ -44,6 +45,8 @@ export const ComposerCanvas: React.FC = () => {
   const [newChordName, setNewChordName] = useState('');
   const [addChordError, setAddChordError] = useState<string | null>(null);
   const [cardScale, setCardScale] = useState(0.7); // canvas card zoom
+  const [keyIdx, setKeyIdx] = useState(0);
+  const [progIdx, setProgIdx] = useState(0);
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -223,6 +226,52 @@ export const ComposerCanvas: React.FC = () => {
     [chordLibrary]
   );
 
+  // Progressions available for the selected key's mode.
+  const progOptions = useMemo(() => progressionsForMode(KEYS[keyIdx].mode), [keyIdx]);
+
+  const handleGenerateBoard = async () => {
+    const key = KEYS[keyIdx];
+    const prog = progOptions[progIdx] ?? progOptions[0];
+    const names = chordsFor(key, prog.degrees);
+    try {
+      setLoading(true);
+      // Ensure each chord exists in the library (create the missing ones).
+      let library = chordLibrary;
+      const chords: Chord[] = [];
+      for (const name of names) {
+        const gen = chordFromName(name);
+        let chord = library.find((c) => c.name === name);
+        if (chord && gen && !samePositions(chord.fretPositions, gen.fretPositions)) {
+          // Existing entry has a non-canonical (e.g. legacy) voicing — correct it.
+          chord = await chordApi.update(chord.id!, { ...chord, ...gen });
+          library = library.map((c) => (c.id === chord!.id ? chord! : c));
+        } else if (!chord) {
+          if (!gen) continue; // no shape for it (shouldn't happen for offered keys)
+          chord = await chordApi.create(gen as Chord);
+          library = [...library, chord];
+        }
+        chords.push(chord);
+      }
+      setChordLibrary(library);
+      // Create a new workspace and lay the chords out in a row.
+      let ws = await workspaceApi.create({ name: `${key.label} · ${prog.label}`, cards: [] });
+      for (let i = 0; i < chords.length; i++) {
+        ws = await workspaceApi.addCard(ws.id!, {
+          chordId: chords[i].id!,
+          positionX: 40 + i * 230,
+          positionY: 60,
+        });
+      }
+      setWorkspaces((prev) => [...prev, ws]);
+      setCurrentWorkspace(ws);
+      setSelectedCards(new Set());
+    } catch (e) {
+      console.error('Failed to generate board:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex h-screen bg-gray-50">
@@ -254,6 +303,36 @@ export const ComposerCanvas: React.FC = () => {
               </button>
             </div>
             {addChordError && <p className="text-xs text-red-600">{addChordError}</p>}
+          </div>
+
+          {/* Generate a board from a key + common progression */}
+          <div className="p-4 border-b border-gray-300 space-y-2">
+            <label className="text-sm font-semibold text-gray-700">New progression board</label>
+            <select
+              value={keyIdx}
+              onChange={(e) => { setKeyIdx(parseInt(e.target.value)); setProgIdx(0); }}
+              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+            >
+              {KEYS.map((k, i) => (
+                <option key={k.label} value={i}>{k.label}</option>
+              ))}
+            </select>
+            <select
+              value={progIdx}
+              onChange={(e) => setProgIdx(parseInt(e.target.value))}
+              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+            >
+              {progOptions.map((p, i) => (
+                <option key={p.label} value={i}>{p.label}</option>
+              ))}
+            </select>
+            <button
+              onClick={handleGenerateBoard}
+              disabled={loading}
+              className="w-full px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded disabled:opacity-50 transition-colors"
+            >
+              Generate board
+            </button>
           </div>
 
           <div className="p-4 space-y-2">

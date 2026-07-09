@@ -48,6 +48,14 @@ export function shapeToFretPositions(frets: number[]): ChordFretPosition[] {
   return positions;
 }
 
+/** True if two fret-position sets are the same shape (ignoring order/finger). */
+export function samePositions(a: ChordFretPosition[], b: ChordFretPosition[]): boolean {
+  if (a.length !== b.length) return false;
+  const key = (p: ChordFretPosition) => `${p.stringNumber}:${p.fretNumber}`;
+  const sa = new Set(a.map(key));
+  return b.every((p) => sa.has(key(p)));
+}
+
 /** Build a Chord (unsaved) from a chord name, or null if we have no shape for it. */
 export function chordFromName(input: string): Omit<Chord, 'id'> | null {
   const name = normalizeChordName(input);
