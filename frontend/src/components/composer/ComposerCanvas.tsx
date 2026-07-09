@@ -1,12 +1,36 @@
-import { useState, useEffect, useCallback } from 'react';
-import type { DragEndEvent } from '@dnd-kit/core';
-import { DndContext, DragOverlay, MouseSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import { DndContext, DragOverlay, MouseSensor, useSensor, useSensors, useDraggable } from '@dnd-kit/core';
 import type { Chord } from '../../api/chords';
 import { chordApi } from '../../api/chords';
 import type { Workspace, WorkspaceCard, CardPositionUpdate } from '../../api/workspaces';
 import { workspaceApi } from '../../api/workspaces';
 import { ChordCard } from './ChordCard';
 import { MiniChordViewer } from './MiniChordViewer';
+
+/** A chord in the sidebar library — a @dnd-kit draggable source. */
+const LibraryChordItem: React.FC<{ chord: Chord }> = ({ chord }) => {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `library-${chord.id}`,
+    data: { fromLibrary: true, chord },
+  });
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={`p-3 bg-gray-50 rounded-lg border border-gray-300 hover:border-blue-400 hover:bg-blue-50 cursor-grab active:cursor-grabbing transition-all ${
+        isDragging ? 'opacity-40' : ''
+      }`}
+    >
+      <div className="font-semibold text-gray-900">{chord.name}</div>
+      <div className="text-xs text-gray-500">{chord.rootNote} {chord.chordType}</div>
+      <div className="mt-2">
+        <MiniChordViewer positions={chord.fretPositions} width={150} height={120} />
+      </div>
+    </div>
+  );
+};
 
 export const ComposerCanvas: React.FC = () => {
   const [chordLibrary, setChordLibrary] = useState<Chord[]>([]);
@@ -17,136 +41,113 @@ export const ComposerCanvas: React.FC = () => {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; cardId: number } | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const canvasRef = useRef<HTMLDivElement>(null);
+
   const sensors = useSensors(
-    useSensor(MouseSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } })
   );
 
-  // Load chord library
   useEffect(() => {
-    const loadChords = async () => {
-      try {
-        const chords = await chordApi.getAll();
-        setChordLibrary(chords);
-      } catch (error) {
-        console.error('Failed to load chord library:', error);
-      }
-    };
-    loadChords();
+    chordApi.getAll()
+      .then(setChordLibrary)
+      .catch((e) => console.error('Failed to load chord library:', e));
   }, []);
 
-  // Load workspaces
   useEffect(() => {
-    const loadWorkspaces = async () => {
-      try {
-        const workspaces = await workspaceApi.getAll();
-        setWorkspaces(workspaces);
-        if (workspaces.length > 0 && !currentWorkspace) {
-          setCurrentWorkspace(workspaces[0]);
-        }
-      } catch (error) {
-        console.error('Failed to load workspaces:', error);
-      }
-    };
-    loadWorkspaces();
-  }, [currentWorkspace]);
+    workspaceApi.getAll()
+      .then((ws) => {
+        setWorkspaces(ws);
+        setCurrentWorkspace((cur) => cur ?? ws[0] ?? null);
+      })
+      .catch((e) => console.error('Failed to load workspaces:', e));
+  }, []);
 
   const handleCreateWorkspace = async () => {
     const name = prompt('Enter workspace name:');
     if (!name) return;
-
     try {
       setLoading(true);
       const newWorkspace = await workspaceApi.create({ name, cards: [] });
-      setWorkspaces([...workspaces, newWorkspace]);
+      setWorkspaces((prev) => [...prev, newWorkspace]);
       setCurrentWorkspace(newWorkspace);
-    } catch (error) {
-      console.error('Failed to create workspace:', error);
+    } catch (e) {
+      console.error('Failed to create workspace:', e);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    const data = event.active.data.current;
+    // Only overlay library drags; existing cards move via their own transform.
+    if (data?.fromLibrary) setDraggedChord(data.chord as Chord);
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, delta } = event;
     setDraggedChord(null);
-
     if (!currentWorkspace) return;
+    const data = active.data.current as { fromLibrary?: boolean; chord?: Chord; position?: { x: number; y: number } } | undefined;
 
-    const data = active.data.current as any;
-
-    if (data?.fromLibrary) {
-      // Adding new chord from library
-      const chord = data.chord as Chord;
-      const position = {
-        x: Math.max(0, delta.x + 50),
-        y: Math.max(0, delta.y + 50),
-      };
-
+    if (data?.fromLibrary && data.chord) {
+      // Drop a new chord from the library onto the canvas at the release point.
+      const rect = active.rect.current.translated;
+      const canvas = canvasRef.current;
+      let x = 40;
+      let y = 40;
+      if (rect && canvas) {
+        const c = canvas.getBoundingClientRect();
+        x = Math.max(0, rect.left - c.left + canvas.scrollLeft);
+        y = Math.max(0, rect.top - c.top + canvas.scrollTop);
+      }
       try {
         const updated = await workspaceApi.addCard(currentWorkspace.id!, {
-          chordId: chord.id!,
-          positionX: position.x,
-          positionY: position.y,
+          chordId: data.chord.id!,
+          positionX: Math.round(x),
+          positionY: Math.round(y),
         });
         setCurrentWorkspace(updated);
-      } catch (error) {
-        console.error('Failed to add card:', error);
+      } catch (e) {
+        console.error('Failed to add card:', e);
       }
-    } else if (data?.position) {
-      // Moving existing card
-      const cardId = parseInt(active.id.toString().split('-')[1]);
-      const newPosition = {
-        x: Math.max(0, data.position.x + delta.x),
-        y: Math.max(0, data.position.y + delta.y),
-      };
+      return;
+    }
 
+    if (data?.position) {
+      // Move an existing card (or all selected cards) by the drag delta.
+      const cardId = parseInt(active.id.toString().split('-')[1]);
       try {
         if (selectedCards.has(cardId) && selectedCards.size > 1) {
-          // Move all selected cards together
-          const updates: CardPositionUpdate[] = Array.from(selectedCards).map(id => {
-            const card = currentWorkspace.cards.find(c => c.id === id);
+          const updates: CardPositionUpdate[] = Array.from(selectedCards).map((id) => {
+            const card = currentWorkspace.cards.find((c) => c.id === id);
             return {
               cardId: id,
-              positionX: Math.max(0, (card?.positionX || 0) + delta.x),
-              positionY: Math.max(0, (card?.positionY || 0) + delta.y),
+              positionX: Math.max(0, Math.round((card?.positionX || 0) + delta.x)),
+              positionY: Math.max(0, Math.round((card?.positionY || 0) + delta.y)),
             };
           });
-          const updated = await workspaceApi.updateCardPositions(currentWorkspace.id!, updates);
-          setCurrentWorkspace(updated);
+          setCurrentWorkspace(await workspaceApi.updateCardPositions(currentWorkspace.id!, updates));
         } else {
-          // Move single card
-          const updated = await workspaceApi.updateCardPosition(currentWorkspace.id!, cardId, {
-            positionX: newPosition.x,
-            positionY: newPosition.y,
-          });
-          setCurrentWorkspace(updated);
+          setCurrentWorkspace(await workspaceApi.updateCardPosition(currentWorkspace.id!, cardId, {
+            positionX: Math.max(0, Math.round(data.position.x + delta.x)),
+            positionY: Math.max(0, Math.round(data.position.y + delta.y)),
+          }));
         }
-      } catch (error) {
-        console.error('Failed to update card position:', error);
+      } catch (e) {
+        console.error('Failed to update card position:', e);
       }
     }
   };
 
   const handleCardClick = (cardId: number, e: React.MouseEvent) => {
     e.stopPropagation();
-
     if (e.ctrlKey || e.metaKey) {
-      // Toggle selection
-      setSelectedCards(prev => {
-        const newSet = new Set(prev);
-        if (newSet.has(cardId)) {
-          newSet.delete(cardId);
-        } else {
-          newSet.add(cardId);
-        }
-        return newSet;
+      setSelectedCards((prev) => {
+        const next = new Set(prev);
+        next.has(cardId) ? next.delete(cardId) : next.add(cardId);
+        return next;
       });
     } else {
-      // Single selection
       setSelectedCards(new Set([cardId]));
     }
   };
@@ -163,7 +164,6 @@ export const ComposerCanvas: React.FC = () => {
 
   const handleDeleteSelected = async () => {
     if (!currentWorkspace || selectedCards.size === 0) return;
-
     try {
       setLoading(true);
       let updated = currentWorkspace;
@@ -173,104 +173,79 @@ export const ComposerCanvas: React.FC = () => {
       setCurrentWorkspace(updated);
       setSelectedCards(new Set());
       setContextMenu(null);
-    } catch (error) {
-      console.error('Failed to delete cards:', error);
+    } catch (e) {
+      console.error('Failed to delete cards:', e);
     } finally {
       setLoading(false);
     }
   };
 
-  const getChordForCard = useCallback((card: WorkspaceCard): Chord | undefined => {
-    return chordLibrary.find(c => c.id === card.chordId);
-  }, [chordLibrary]);
+  const getChordForCard = useCallback(
+    (card: WorkspaceCard): Chord | undefined => chordLibrary.find((c) => c.id === card.chordId),
+    [chordLibrary]
+  );
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar - Chord Library */}
-      <div className="w-64 bg-white border-r border-gray-300 overflow-y-auto">
-        <div className="p-4 border-b border-gray-300">
-          <h2 className="text-xl font-bold text-gray-900">Chord Library</h2>
-          <p className="text-sm text-gray-600 mt-1">Drag chords to canvas</p>
-        </div>
-
-        <div className="p-4 space-y-2">
-          {chordLibrary.map(chord => (
-            <div
-              key={`library-${chord.id}`}
-              draggable
-              onDragStart={(e) => {
-                setDraggedChord(chord);
-                e.dataTransfer.effectAllowed = 'copy';
-              }}
-              className="p-3 bg-gray-50 rounded-lg border border-gray-300 hover:border-blue-400 hover:bg-blue-50 cursor-grab active:cursor-grabbing transition-all"
-            >
-              <div className="font-semibold text-gray-900">{chord.name}</div>
-              <div className="text-xs text-gray-500">{chord.rootNote} {chord.chordType}</div>
-              <div className="mt-2">
-                <MiniChordViewer positions={chord.fretPositions} width={150} height={120} />
-              </div>
-            </div>
-          ))}
-
-          {chordLibrary.length === 0 && (
-            <div className="text-center text-gray-500 py-8">
-              No chords in library
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Main Canvas */}
-      <div className="flex-1 flex flex-col">
-        {/* Toolbar */}
-        <div className="bg-white border-b border-gray-300 p-4 flex items-center gap-4">
-          <select
-            value={currentWorkspace?.id || ''}
-            onChange={(e) => {
-              const ws = workspaces.find(w => w.id === parseInt(e.target.value));
-              setCurrentWorkspace(ws || null);
-            }}
-            className="px-4 py-2 border border-gray-300 rounded-lg"
-          >
-            <option value="">Select Workspace</option>
-            {workspaces.map(ws => (
-              <option key={ws.id} value={ws.id}>{ws.name}</option>
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="flex h-screen bg-gray-50">
+        {/* Sidebar - Chord Library */}
+        <div className="w-64 bg-white border-r border-gray-300 overflow-y-auto">
+          <div className="p-4 border-b border-gray-300">
+            <h2 className="text-xl font-bold text-gray-900">Chord Library</h2>
+            <p className="text-sm text-gray-600 mt-1">Drag chords to the canvas</p>
+          </div>
+          <div className="p-4 space-y-2">
+            {chordLibrary.map((chord) => (
+              <LibraryChordItem key={`library-${chord.id}`} chord={chord} />
             ))}
-          </select>
-
-          <button
-            onClick={handleCreateWorkspace}
-            disabled={loading}
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 transition-colors"
-          >
-            New Workspace
-          </button>
-
-          <button
-            onClick={handleDeleteSelected}
-            disabled={selectedCards.size === 0 || loading}
-            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg disabled:opacity-50 transition-colors"
-          >
-            Delete Selected ({selectedCards.size})
-          </button>
-
-          <div className="ml-auto text-sm text-gray-600">
-            {currentWorkspace?.cards.length || 0} cards
+            {chordLibrary.length === 0 && (
+              <div className="text-center text-gray-500 py-8">No chords in library</div>
+            )}
           </div>
         </div>
 
-        {/* Canvas */}
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        {/* Main Canvas */}
+        <div className="flex-1 flex flex-col">
+          {/* Toolbar */}
+          <div className="bg-white border-b border-gray-300 p-4 flex items-center gap-4">
+            <select
+              value={currentWorkspace?.id || ''}
+              onChange={(e) => setCurrentWorkspace(workspaces.find((w) => w.id === parseInt(e.target.value)) || null)}
+              className="px-4 py-2 border border-gray-300 rounded-lg"
+            >
+              <option value="">Select Workspace</option>
+              {workspaces.map((ws) => (
+                <option key={ws.id} value={ws.id}>{ws.name}</option>
+              ))}
+            </select>
+            <button
+              onClick={handleCreateWorkspace}
+              disabled={loading}
+              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 transition-colors"
+            >
+              New Workspace
+            </button>
+            <button
+              onClick={handleDeleteSelected}
+              disabled={selectedCards.size === 0 || loading}
+              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg disabled:opacity-50 transition-colors"
+            >
+              Delete Selected ({selectedCards.size})
+            </button>
+            <div className="ml-auto text-sm text-gray-600">{currentWorkspace?.cards.length || 0} cards</div>
+          </div>
+
+          {/* Canvas */}
           <div
+            ref={canvasRef}
             className="flex-1 relative overflow-auto bg-gray-100"
             onClick={handleCanvasClick}
             style={{ minHeight: '600px' }}
           >
             {currentWorkspace ? (
-              currentWorkspace.cards.map(card => {
+              currentWorkspace.cards.map((card) => {
                 const chord = getChordForCard(card);
                 if (!chord) return null;
-
                 return (
                   <ChordCard
                     key={card.id}
@@ -289,16 +264,17 @@ export const ComposerCanvas: React.FC = () => {
               </div>
             )}
           </div>
+        </div>
 
-          <DragOverlay>
-            {draggedChord && (
-              <div className="bg-white rounded-lg shadow-lg border-2 border-blue-500 p-3 opacity-90">
-                <div className="font-bold text-gray-900 mb-2">{draggedChord.name}</div>
-                <MiniChordViewer positions={draggedChord.fretPositions} />
-              </div>
-            )}
-          </DragOverlay>
-        </DndContext>
+        {/* Drag overlay for library drags */}
+        <DragOverlay>
+          {draggedChord && (
+            <div className="bg-white rounded-lg shadow-lg border-2 border-blue-500 p-3 opacity-90">
+              <div className="font-bold text-gray-900 mb-2">{draggedChord.name}</div>
+              <MiniChordViewer positions={draggedChord.fretPositions} />
+            </div>
+          )}
+        </DragOverlay>
 
         {/* Context Menu */}
         {contextMenu && (
@@ -316,6 +292,6 @@ export const ComposerCanvas: React.FC = () => {
           </div>
         )}
       </div>
-    </div>
+    </DndContext>
   );
 };
