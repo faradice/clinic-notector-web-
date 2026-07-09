@@ -82,6 +82,9 @@ export const useChordDetector = (enabled: boolean) => {
   const rafRef = useRef<number | undefined>(undefined);
   const freqDataRef = useRef<Float32Array<ArrayBuffer> | null>(null);
   const chromaEmaRef = useRef<number[]>(new Array(12).fill(0));
+  // Hold the most recent detection so it stays on screen when the sound stops.
+  const lastChordRef = useRef<ChordMatch | null>(null);
+  const lastChromaRef = useRef<number[]>(new Array(12).fill(0));
 
   const start = useCallback(async () => {
     try {
@@ -112,6 +115,8 @@ export const useChordDetector = (enabled: boolean) => {
     audioContextRef.current = null;
     analyserRef.current = null;
     chromaEmaRef.current = new Array(12).fill(0);
+    lastChordRef.current = null;
+    lastChromaRef.current = new Array(12).fill(0);
     setIsListening(false);
     setReading(EMPTY);
   }, []);
@@ -152,14 +157,16 @@ export const useChordDetector = (enabled: boolean) => {
         const ema = chromaEmaRef.current;
         for (let i = 0; i < 12; i++) ema[i] = ema[i] * 0.6 + chroma[i] * 0.4;
 
-        const max = Math.max(...ema) || 1;
-        const display = ema.map((x) => x / max);
-
-        setReading({
-          chord: hasSignal ? matchChord(ema) : null,
-          chroma: display,
-          hasSignal,
-        });
+        if (hasSignal) {
+          const max = Math.max(...ema) || 1;
+          const display = ema.map((x) => x / max);
+          lastChordRef.current = matchChord(ema);
+          lastChromaRef.current = display;
+          setReading({ chord: lastChordRef.current, chroma: display, hasSignal: true });
+        } else {
+          // No sound: keep showing the last detected chord (frozen), hasSignal=false.
+          setReading({ chord: lastChordRef.current, chroma: lastChromaRef.current, hasSignal: false });
+        }
       }
       rafRef.current = requestAnimationFrame(tick);
     };

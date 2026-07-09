@@ -7,7 +7,9 @@ export const ChordDetector: React.FC = () => {
   const [active, setActive] = useState(false);
   const { reading, isListening } = useChordDetector(active);
 
-  const chord = reading.hasSignal ? reading.chord : null;
+  // Show the current chord, or hold the last detected one when the sound stops.
+  const chord = reading.chord;
+  const isLive = reading.hasSignal;
   const chordTones = new Set(chord ? chord.intervals.map((iv) => (chord.root + iv) % 12) : []);
   const confident = chord != null && chord.score >= 0.6;
   const shape = confident ? shapeFor(chord!.name) : null;
@@ -20,8 +22,12 @@ export const ChordDetector: React.FC = () => {
       {/* Detected chord */}
       <div className="flex flex-col items-center mb-6">
         <div
-          className="font-bold leading-none"
-          style={{ fontSize: 88, color: !chord ? '#64748b' : confident ? '#22c55e' : '#f59e0b' }}
+          className="font-bold leading-none transition-opacity"
+          style={{
+            fontSize: 88,
+            color: !chord ? '#64748b' : confident ? '#22c55e' : '#f59e0b',
+            opacity: chord && !isLive ? 0.6 : 1, // dim when it's a held (frozen) reading
+          }}
         >
           {chord ? chord.name : '–'}
         </div>
@@ -29,7 +35,15 @@ export const ChordDetector: React.FC = () => {
           {chord ? chord.notes.join(' · ') : ''}
         </div>
         <div className="h-5 mt-1 text-sm text-slate-500">
-          {!isListening ? '' : !reading.hasSignal ? 'Play a chord…' : confident ? '' : '(unsure)'}
+          {!isListening
+            ? ''
+            : !chord
+              ? 'Play a chord…'
+              : !isLive
+                ? '⏸ last detected'
+                : confident
+                  ? ''
+                  : '(unsure)'}
         </div>
       </div>
 
