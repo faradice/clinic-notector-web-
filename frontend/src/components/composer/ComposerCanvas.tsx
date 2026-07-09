@@ -7,6 +7,7 @@ import type { Workspace, WorkspaceCard, CardPositionUpdate } from '../../api/wor
 import { workspaceApi } from '../../api/workspaces';
 import { ChordCard } from './ChordCard';
 import { MiniChordViewer } from './MiniChordViewer';
+import { chordFromName, normalizeChordName } from './chordFromName';
 
 /** A chord in the sidebar library — a @dnd-kit draggable source. */
 const LibraryChordItem: React.FC<{ chord: Chord }> = ({ chord }) => {
@@ -40,6 +41,8 @@ export const ComposerCanvas: React.FC = () => {
   const [draggedChord, setDraggedChord] = useState<Chord | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; cardId: number } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [newChordName, setNewChordName] = useState('');
+  const [addChordError, setAddChordError] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -72,6 +75,34 @@ export const ComposerCanvas: React.FC = () => {
       setCurrentWorkspace(newWorkspace);
     } catch (e) {
       console.error('Failed to create workspace:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddChord = async () => {
+    const input = newChordName.trim();
+    if (!input) return;
+    const generated = chordFromName(input);
+    if (!generated) {
+      setAddChordError(`No shape for "${normalizeChordName(input)}" yet — try C, Am, G7, Dsus4, Cmaj7…`);
+      return;
+    }
+    const existing = chordLibrary.find((c) => c.name === generated.name);
+    if (existing) {
+      setAddChordError(`"${generated.name}" is already in the library.`);
+      setNewChordName('');
+      return;
+    }
+    try {
+      setLoading(true);
+      setAddChordError(null);
+      const created = await chordApi.create(generated as Chord);
+      setChordLibrary((prev) => [...prev, created]);
+      setNewChordName('');
+    } catch (e) {
+      console.error('Failed to add chord:', e);
+      setAddChordError('Failed to save the chord.');
     } finally {
       setLoading(false);
     }
@@ -194,6 +225,30 @@ export const ComposerCanvas: React.FC = () => {
             <h2 className="text-xl font-bold text-gray-900">Chord Library</h2>
             <p className="text-sm text-gray-600 mt-1">Drag chords to the canvas</p>
           </div>
+
+          {/* Add a chord by name */}
+          <div className="p-4 border-b border-gray-300 space-y-2">
+            <label className="text-sm font-semibold text-gray-700">Add a chord</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newChordName}
+                onChange={(e) => { setNewChordName(e.target.value); setAddChordError(null); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleAddChord(); }}
+                placeholder="e.g. C, Am, G7"
+                className="flex-1 min-w-0 px-2 py-1.5 border border-gray-300 rounded text-sm"
+              />
+              <button
+                onClick={handleAddChord}
+                disabled={loading || !newChordName.trim()}
+                className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded disabled:opacity-50 transition-colors"
+              >
+                Add Chord
+              </button>
+            </div>
+            {addChordError && <p className="text-xs text-red-600">{addChordError}</p>}
+          </div>
+
           <div className="p-4 space-y-2">
             {chordLibrary.map((chord) => (
               <LibraryChordItem key={`library-${chord.id}`} chord={chord} />
