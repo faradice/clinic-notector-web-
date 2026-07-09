@@ -66,11 +66,11 @@ export const ChordCard: React.FC<ChordCardProps> = ({
           <h3 className="text-lg font-bold text-gray-900">{chord.name}</h3>
           <button
             onClick={handlePlayChord}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
+            className="p-2 hover:bg-green-100 rounded-full transition-colors"
             title="Play chord"
           >
             <svg
-              className="w-5 h-5 text-green-600"
+              className="w-8 h-8 text-green-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
