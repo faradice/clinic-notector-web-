@@ -84,6 +84,25 @@ export const ComposerCanvas: React.FC = () => {
     }
   };
 
+  const handleDeleteWorkspace = async () => {
+    if (!currentWorkspace) return;
+    if (!window.confirm(`Delete workspace "${currentWorkspace.name}"? This can't be undone.`)) return;
+    try {
+      setLoading(true);
+      const id = currentWorkspace.id!;
+      await workspaceApi.delete(id);
+      const remaining = workspaces.filter((w) => w.id !== id);
+      setWorkspaces(remaining);
+      setCurrentWorkspace(remaining[0] ?? null);
+      setSelectedCards(new Set());
+      setContextMenu(null);
+    } catch (e) {
+      console.error('Failed to delete workspace:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAddChord = async () => {
     const input = newChordName.trim();
     if (!input) return;
@@ -276,7 +295,7 @@ export const ComposerCanvas: React.FC = () => {
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex h-screen bg-gray-50">
         {/* Sidebar - Chord Library */}
-        <div className="w-64 bg-white border-r border-gray-300 overflow-y-auto">
+        <div className="w-80 shrink-0 bg-white border-r border-gray-300 overflow-y-auto">
           <div className="p-4 border-b border-gray-300">
             <h2 className="text-xl font-bold text-gray-900">Chord Library</h2>
             <p className="text-sm text-gray-600 mt-1">Drag chords to the canvas</p>
@@ -365,6 +384,15 @@ export const ComposerCanvas: React.FC = () => {
               className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 transition-colors"
             >
               New Workspace
+            </button>
+
+            <button
+              onClick={handleDeleteWorkspace}
+              disabled={!currentWorkspace || loading}
+              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg disabled:opacity-50 transition-colors"
+              title="Delete the current workspace"
+            >
+              Delete Workspace
             </button>
             <button
               onClick={handleDeleteSelected}
