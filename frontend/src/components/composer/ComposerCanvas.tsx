@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { DndContext, DragOverlay, MouseSensor, useSensor, useSensors, useDraggable } from '@dnd-kit/core';
 import type { Chord } from '../../api/chords';
@@ -43,6 +43,7 @@ export const ComposerCanvas: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [newChordName, setNewChordName] = useState('');
   const [addChordError, setAddChordError] = useState<string | null>(null);
+  const [cardScale, setCardScale] = useState(0.7); // canvas card zoom
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -216,6 +217,12 @@ export const ComposerCanvas: React.FC = () => {
     [chordLibrary]
   );
 
+  // Library sorted alphabetically by name for the sidebar.
+  const sortedLibrary = useMemo(
+    () => [...chordLibrary].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })),
+    [chordLibrary]
+  );
+
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex h-screen bg-gray-50">
@@ -250,7 +257,7 @@ export const ComposerCanvas: React.FC = () => {
           </div>
 
           <div className="p-4 space-y-2">
-            {chordLibrary.map((chord) => (
+            {sortedLibrary.map((chord) => (
               <LibraryChordItem key={`library-${chord.id}`} chord={chord} />
             ))}
             {chordLibrary.length === 0 && (
@@ -287,7 +294,23 @@ export const ComposerCanvas: React.FC = () => {
             >
               Delete Selected ({selectedCards.size})
             </button>
-            <div className="ml-auto text-sm text-gray-600">{currentWorkspace?.cards.length || 0} cards</div>
+            <div className="ml-auto flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600">Zoom</label>
+                <input
+                  type="range"
+                  min={0.4}
+                  max={1.2}
+                  step={0.05}
+                  value={cardScale}
+                  onChange={(e) => setCardScale(parseFloat(e.target.value))}
+                  className="w-28 accent-blue-500"
+                  title="Card size"
+                />
+                <span className="text-xs text-gray-500 w-9">{Math.round(cardScale * 100)}%</span>
+              </div>
+              <div className="text-sm text-gray-600">{currentWorkspace?.cards.length || 0} cards</div>
+            </div>
           </div>
 
           {/* Canvas */}
@@ -308,6 +331,7 @@ export const ComposerCanvas: React.FC = () => {
                     chord={chord}
                     position={{ x: card.positionX, y: card.positionY }}
                     isSelected={selectedCards.has(card.id!)}
+                    scale={cardScale}
                     onClick={(e) => handleCardClick(card.id!, e)}
                     onContextMenu={(e) => handleContextMenu(card.id!, e)}
                   />

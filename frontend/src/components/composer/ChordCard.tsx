@@ -9,6 +9,7 @@ interface ChordCardProps {
   chord: Chord;
   position: { x: number; y: number };
   isSelected?: boolean;
+  scale?: number;
   onClick?: (e: React.MouseEvent) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
 }
@@ -18,6 +19,7 @@ export const ChordCard: React.FC<ChordCardProps> = ({
   chord,
   position,
   isSelected = false,
+  scale = 1,
   onClick,
   onContextMenu,
 }) => {
@@ -28,11 +30,15 @@ export const ChordCard: React.FC<ChordCardProps> = ({
 
   const { playChord } = useChordPlayer();
 
+  const dragTransform = CSS.Transform.toString(transform);
   const style = {
     position: 'absolute' as const,
     left: `${position.x}px`,
     top: `${position.y}px`,
-    transform: CSS.Transform.toString(transform),
+    // Compose the drag translate (if any) with the view zoom; anchor top-left so
+    // scaling keeps the card at its stored position.
+    transform: dragTransform ? `${dragTransform} scale(${scale})` : `scale(${scale})`,
+    transformOrigin: 'top left' as const,
     zIndex: isDragging ? 1000 : isSelected ? 100 : 1,
   };
 
