@@ -69,8 +69,48 @@ export interface ChordReading {
 const EMPTY: ChordReading = { chord: null, chroma: new Array(12).fill(0), hasSignal: false };
 
 const FFT_SIZE = 8192;
-const MIN_HZ = 70;    // ~C#2
-const MAX_HZ = 2000;  // ~B6
+const MIN_HZ = 70;         // ~C#2 — lowest fundamental we consider
+const MAX_HZ = 2000;       // audible range used for the signal gate
+const MAX_FUND_HZ = 1300;  // fold fundamentals into chroma up to here
+const HARMONICS = 4;       // number of harmonics multiplied in the HPS
+
+/** dB spectrum -> linear magnitude (floored so an empty harmonic can't zero the HPS product). */
+export function dbToMagnitude(db: Float32Array): Float32Array {
+  const mag = new Float32Array(db.length);
+  for (let i = 0; i < db.length; i++) mag[i] = Math.pow(10, Math.max(db[i], -120) / 20);
+  return mag;
+}
+
+/**
+ * Harmonic Product Spectrum: hps[i] = mag[i]·mag[2i]·…·mag[H·i]. A true fundamental
+ * has energy at all of its harmonics, so its product stays large; a bin that is only
+ * a harmonic of some lower note collapses toward zero — which suppresses overtones.
+ */
+export function harmonicProductSpectrum(mag: Float32Array, harmonics = HARMONICS): Float32Array {
+  const n = mag.length;
+  const hps = new Float32Array(n);
+  const maxI = Math.floor((n - 1) / harmonics);
+  for (let i = 1; i <= maxI; i++) {
+    let prod = mag[i];
+    for (let r = 2; r <= harmonics; r++) prod *= mag[i * r];
+    hps[i] = prod;
+  }
+  return hps;
+}
+
+/** Fold a spectrum into a 12-bin chroma vector over [minHz, maxHz]. */
+export function spectrumToChroma(spectrum: Float32Array, binHz: number, minHz: number, maxHz: number): number[] {
+  const chroma = new Array(12).fill(0);
+  for (let i = 1; i < spectrum.length; i++) {
+    const f = i * binHz;
+    if (f < minHz || f > maxHz) continue;
+    const v = spectrum[i];
+    if (v <= 0) continue;
+    const midi = 69 + 12 * Math.log2(f / 440);
+    chroma[((Math.round(midi) % 12) + 12) % 12] += v;
+  }
+  return chroma;
+}
 
 export const useChordDetector = (enabled: boolean) => {
   const [reading, setReading] = useState<ChordReading>(EMPTY);
@@ -136,23 +176,22 @@ export const useChordDetector = (enabled: boolean) => {
       if (analyser && data && ctx) {
         analyser.getFloatFrequencyData(data);
         const binHz = ctx.sampleRate / FFT_SIZE;
+        const mag = dbToMagnitude(data);
 
-        // Fold the spectrum into 12 pitch classes.
-        const chroma = new Array(12).fill(0);
+        // Signal gate from the raw (audible) magnitude.
         let energy = 0;
         for (let i = 1; i < data.length; i++) {
           const f = i * binHz;
-          if (f < MIN_HZ || f > MAX_HZ) continue;
-          const db = data[i];
-          if (db < -75) continue; // ignore near-silent bins
-          const amp = Math.pow(10, db / 20); // dB -> linear amplitude
-          const midi = 69 + 12 * Math.log2(f / 440);
-          const pc = ((Math.round(midi) % 12) + 12) % 12;
-          chroma[pc] += amp;
-          energy += amp;
+          if (f < MIN_HZ || f > MAX_HZ || data[i] < -75) continue;
+          energy += mag[i];
         }
-
         const hasSignal = energy > 0.02;
+
+        // Suppress overtones with the Harmonic Product Spectrum, then fold the
+        // surviving fundamentals into 12 pitch classes.
+        const hps = harmonicProductSpectrum(mag);
+        const chroma = spectrumToChroma(hps, binHz, MIN_HZ, MAX_FUND_HZ);
+
         // Smooth across frames for stability.
         const ema = chromaEmaRef.current;
         for (let i = 0; i < 12; i++) ema[i] = ema[i] * 0.6 + chroma[i] * 0.4;
