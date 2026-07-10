@@ -24,22 +24,22 @@ export const ChordDetector: React.FC = () => {
   const handleAddToLibrary = async () => {
     if (!chord) return;
     const gen = chordFromName(chord.name);
-    if (!gen) { setAddStatus('No shape to save for this chord'); return; }
+    if (!gen) { setAddStatus('Ekkert grip til að vista fyrir þennan hljóm'); return; }
     try {
       const existing = await chordApi.getByName(chord.name).catch(() => null);
-      if (existing) { setAddStatus(`${chord.name} is already in the library`); return; }
+      if (existing) { setAddStatus(`„${chord.name}“ er þegar í safninu`); return; }
       await chordApi.create(gen as Chord);
-      setAddStatus(`Added ${chord.name} to the library ✓`);
+      setAddStatus(`Bætti ${chord.name} í safnið ✓`);
     } catch (e) {
       console.error('Failed to add chord to library', e);
-      setAddStatus('Failed to add');
+      setAddStatus('Tókst ekki að bæta við');
     }
   };
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-slate-900 text-slate-100 p-6">
-      <h2 className="text-2xl font-bold mt-2 mb-1">Chord Detector</h2>
-      <p className="text-slate-400 mb-6 text-sm">Strum a chord and hold it · experimental</p>
+      <h2 className="text-2xl font-bold mt-2 mb-1">Hljómagreinir</h2>
+      <p className="text-slate-400 mb-6 text-sm">Sláðu hljóm og haltu honum · á tilraunastigi</p>
 
       {/* Detected chord */}
       <div className="flex flex-col items-center mb-6">
@@ -60,12 +60,12 @@ export const ChordDetector: React.FC = () => {
           {!isListening
             ? ''
             : !chord
-              ? 'Play a chord…'
+              ? 'Spilaðu hljóm…'
               : !isLive
-                ? '⏸ last detected'
+                ? '⏸ síðast greint'
                 : confident
                   ? ''
-                  : '(unsure)'}
+                  : '(óviss)'}
         </div>
       </div>
 
@@ -74,17 +74,17 @@ export const ChordDetector: React.FC = () => {
         {shape ? (
           <>
             <ChordDiagram frets={shape} />
-            <span className="mt-1 text-xs text-slate-500">a common shape for {chord!.name}</span>
+            <span className="mt-1 text-xs text-slate-500">algengt grip fyrir {chord!.name}</span>
             <button
               onClick={handleAddToLibrary}
               className="mt-2 px-3 py-1.5 rounded-md bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold"
             >
-              ＋ Add {chord!.name} to library
+              ＋ Bæta {chord!.name} í safnið
             </button>
           </>
         ) : (
           <span className="text-xs text-slate-600">
-            {confident ? 'no stock diagram for this chord' : ''}
+            {confident ? 'ekkert grip til fyrir þennan hljóm' : ''}
           </span>
         )}
       </div>
@@ -115,12 +115,12 @@ export const ChordDetector: React.FC = () => {
           active ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'
         }`}
       >
-        {active ? '■ Stop' : '🎤 Start listening'}
+        {active ? '■ Stöðva' : '🎤 Byrja að hlusta'}
       </button>
 
       <p className="text-slate-500 text-xs mt-6 max-w-md text-center">
-        MVP: recognizes the chord name from the notes it hears (major, minor, sus, dim, aug, 7ths).
-        Works best on a clearly strummed, sustained chord — it can't tell your exact fingering.
+        Frumgerð: þekkir heiti hljómsins út frá nótunum sem heyrast (dúr, moll, sus, dim, aug, 7-undir).
+        Virkar best á skýrt slegnum hljómi sem er haldið — það getur ekki lesið nákvæmt gripið þitt.
       </p>
     </div>
   );

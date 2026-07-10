@@ -25,7 +25,7 @@ function App() {
                     : 'text-gray-500 border-transparent hover:text-gray-700'
                 }`}
               >
-                Composer
+                Hljómasmiðja
               </button>
               <button
                 onClick={() => setActiveTab('notector')}
@@ -35,7 +35,7 @@ function App() {
                     : 'text-gray-500 border-transparent hover:text-gray-700'
                 }`}
               >
-                Notector
+                Nótnaþjálfun
               </button>
               <button
                 onClick={() => setActiveTab('tuner')}
@@ -45,7 +45,7 @@ function App() {
                     : 'text-gray-500 border-transparent hover:text-gray-700'
                 }`}
               >
-                Tuner
+                Stillir
               </button>
               <button
                 onClick={() => setActiveTab('chord-detector')}
@@ -55,7 +55,7 @@ function App() {
                     : 'text-gray-500 border-transparent hover:text-gray-700'
                 }`}
               >
-                Chord Detector
+                Hljómagreinir
               </button>
             </div>
           </div>

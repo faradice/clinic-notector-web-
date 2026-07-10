@@ -44,15 +44,15 @@ export const GuitarTuner: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-slate-900 text-slate-100 p-6">
-      <h2 className="text-2xl font-bold mt-2 mb-1">Guitar Tuner</h2>
-      <p className="text-slate-400 mb-4 text-sm">Standard tuning · E A D G B E</p>
+      <h2 className="text-2xl font-bold mt-2 mb-1">Gítarstillir</h2>
+      <p className="text-slate-400 mb-4 text-sm">Venjuleg stilling · E A D G B E</p>
 
       {/* Meter show/hide toggle */}
       <button
         onClick={() => setShowMeter((v) => !v)}
         className="mb-4 px-4 py-1.5 rounded-full text-sm font-semibold border border-slate-600 bg-slate-800 hover:bg-slate-700"
       >
-        {showMeter ? '🙈 Hide meter (tune by ear)' : '📊 Show meter'}
+        {showMeter ? '🙈 Fela mæli (stilla eftir eyra)' : '📊 Sýna mæli'}
       </button>
 
       {showMeter ? (
@@ -84,8 +84,8 @@ export const GuitarTuner: React.FC = () => {
                   stroke={c === 0 ? '#22c55e' : '#475569'} strokeWidth={c === 0 ? 3 : 2} />
               );
             })}
-            <text x={30} y={168} fill="#64748b" fontSize={12} textAnchor="middle">♭ flat</text>
-            <text x={270} y={168} fill="#64748b" fontSize={12} textAnchor="middle">sharp ♯</text>
+            <text x={30} y={168} fill="#64748b" fontSize={12} textAnchor="middle">♭ lágt</text>
+            <text x={270} y={168} fill="#64748b" fontSize={12} textAnchor="middle">hátt ♯</text>
             <g transform={`rotate(${needleAngle} 150 150)`} style={{ transition: 'transform 130ms ease-out' }}>
               <line x1={150} y1={150} x2={150} y2={44} stroke={accent} strokeWidth={4} strokeLinecap="round" />
               <circle cx={150} cy={150} r={8} fill={accent} />
@@ -93,7 +93,7 @@ export const GuitarTuner: React.FC = () => {
           </svg>
 
           <div className="h-8 mb-3 text-lg font-semibold" style={{ color: accent }}>
-            {!isListening ? '' : !hasPitch ? 'Play a string…' : inTune ? '✓ In tune' : cents < 0 ? 'Tune up ↑' : 'Tune down ↓'}
+            {!isListening ? '' : !hasPitch ? 'Spilaðu streng…' : inTune ? '✓ Rétt stillt' : cents < 0 ? 'Hækka ↑' : 'Lækka ↓'}
           </div>
           <div className="text-slate-400 font-mono text-sm mb-4 h-5">
             {hasPitch ? `${reading.frequency.toFixed(1)} Hz` : ''}
@@ -106,17 +106,17 @@ export const GuitarTuner: React.FC = () => {
               active ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'
             }`}
           >
-            {active ? '■ Stop mic' : '🎤 Start mic'}
+            {active ? '■ Slökkva á hljóðnema' : '🎤 Kveikja á hljóðnema'}
           </button>
         </>
       ) : (
         <p className="text-slate-300 text-center max-w-sm my-10 text-lg">
-          🔊 Tap a string below to hear its pitch, then tune your guitar to match it by ear.
+          🔊 Smelltu á streng hér að neðan til að heyra tóninn, stilltu svo gítarinn eftir eyranu.
         </p>
       )}
 
       {/* String chips — tap to hear the reference pitch */}
-      <p className="text-slate-500 text-xs mb-2">Tap a string to hear it</p>
+      <p className="text-slate-500 text-xs mb-2">Smelltu á streng til að heyra hann</p>
       <div className="flex gap-2 sm:gap-3 mb-8">
         {GUITAR_STRINGS.map((s) => {
           const isPlaying = playing === s.label;
@@ -134,7 +134,7 @@ export const GuitarTuner: React.FC = () => {
               key={s.label}
               onClick={() => playReference(s)}
               className={`w-14 h-14 rounded-full flex items-center justify-center font-bold border-2 transition-all ${cls}`}
-              title={`Play ${s.label} (${s.frequency.toFixed(2)} Hz)`}
+              title={`Spila ${s.label} (${s.frequency.toFixed(2)} Hz)`}
             >
               {s.note}
               <span className="text-xs align-super text-slate-400">{s.octave}</span>

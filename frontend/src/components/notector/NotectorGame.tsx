@@ -20,39 +20,39 @@ interface LevelConfig {
 
 const LEVELS: Record<DifficultyLevel, LevelConfig> = {
   muscle: {
-    name: 'Muscle Memory',
-    description: 'One bar, looped non-stop',
+    name: 'Vöðvaminni',
+    description: 'Einn taktur, endurtekinn stanslaust',
     noteCount: 4,
     repeatUntilPerfect: false,
     fixedBar: true,
   },
   beginner: {
-    name: 'Beginner',
-    description: 'Same 4 notes until all correct',
+    name: 'Byrjandi',
+    description: 'Sömu 4 nótur þar til allt er rétt',
     noteCount: 4,
     repeatUntilPerfect: true,
   },
   elementary: {
-    name: 'Elementary',
-    description: '4 notes, failed notes retry',
+    name: 'Grunnstig',
+    description: '4 nótur, rangar nótur endurteknar',
     noteCount: 4,
     repeatUntilPerfect: false,
   },
   intermediate: {
-    name: 'Intermediate',
-    description: '8 notes, faster pace',
+    name: 'Miðstig',
+    description: '8 nótur, hraðari',
     noteCount: 8,
     repeatUntilPerfect: false,
   },
   advanced: {
-    name: 'Advanced',
-    description: '12 notes, full range',
+    name: 'Framhaldsstig',
+    description: '12 nótur, allt sviðið',
     noteCount: 12,
     repeatUntilPerfect: false,
   },
   expert: {
-    name: 'Expert',
-    description: '16 notes, mastery challenge',
+    name: 'Meistarastig',
+    description: '16 nótur, áskorun',
     noteCount: 16,
     repeatUntilPerfect: false,
   },
@@ -400,7 +400,7 @@ export const NotectorGame: React.FC = () => {
       <div className="bg-white border-b border-gray-300 p-4 flex items-center gap-6 flex-wrap">
         {/* Level Selector */}
         <div className="flex items-center gap-2">
-          <label className="text-sm font-semibold text-gray-700">Level:</label>
+          <label className="text-sm font-semibold text-gray-700">Stig:</label>
           <select
             value={level}
             onChange={(e) => setLevel(e.target.value as DifficultyLevel)}
@@ -418,7 +418,7 @@ export const NotectorGame: React.FC = () => {
 
         {/* Answer mode: Pick (type) vs Listen (guitar/mic) */}
         <div className="flex items-center gap-2">
-          <label className="text-sm font-semibold text-gray-700">Answer by:</label>
+          <label className="text-sm font-semibold text-gray-700">Svara með:</label>
           <div className="flex rounded-lg overflow-hidden border border-gray-300">
             <button
               onClick={() => setInputMode('pick')}
@@ -427,7 +427,7 @@ export const NotectorGame: React.FC = () => {
                 inputMode === 'pick' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
-              ⌨️ Pick
+              ⌨️ Velja
             </button>
             <button
               onClick={() => setInputMode('listen')}
@@ -436,14 +436,14 @@ export const NotectorGame: React.FC = () => {
                 inputMode === 'listen' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
-              🎸 Listen
+              🎸 Hlusta
             </button>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <label className="text-sm font-semibold text-gray-700" title="One metronome click per note — lower = more time per note">
-            Tempo:
+          <label className="text-sm font-semibold text-gray-700" title="Einn taktsláttur á nótu — lægra = meiri tími á nótu">
+            Hraði:
           </label>
           <input
             type="number"
@@ -454,12 +454,12 @@ export const NotectorGame: React.FC = () => {
             disabled={gameState === 'playing'}
             className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-lg font-semibold"
           />
-          <span className="text-xs text-gray-500">clicks/notes per min</span>
+          <span className="text-xs text-gray-500">slög/nótur á mín</span>
         </div>
 
         {/* Metronome tick volume */}
         <div className="flex items-center gap-2">
-          <label className="text-sm font-semibold text-gray-700">Tick:</label>
+          <label className="text-sm font-semibold text-gray-700">Taktsláttur:</label>
           <button
             type="button"
             onClick={() => {
@@ -470,7 +470,7 @@ export const NotectorGame: React.FC = () => {
                 setTickVolume(lastTickVolumeRef.current || 0.7);
               }
             }}
-            title={tickVolume > 0 ? 'Mute metronome tick' : 'Unmute metronome tick'}
+            title={tickVolume > 0 ? 'Þagga taktslátt' : 'Kveikja á taktslætti'}
             className="px-2 py-1.5 text-xl rounded-lg border border-gray-300 hover:bg-gray-50"
           >
             {tickVolume > 0 ? '🔊' : '🔇'}
@@ -495,23 +495,23 @@ export const NotectorGame: React.FC = () => {
         <button
           type="button"
           onClick={() => setShowNoteNames((v) => !v)}
-          title="Show or hide the note names under each note"
+          title="Sýna eða fela heiti nótanna undir hverri nótu"
           className={`px-3 py-2 rounded-lg border text-sm font-semibold transition-colors ${
             showNoteNames
               ? 'bg-blue-500 text-white border-blue-600'
               : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
           }`}
         >
-          🔤 Names: {showNoteNames ? 'On' : 'Off'}
+          🔤 Nöfn: {showNoteNames ? 'Á' : 'Af'}
         </button>
 
         <div className="flex items-center gap-4">
           <div className="text-sm">
-            <span className="font-semibold text-gray-700">Round:</span>
+            <span className="font-semibold text-gray-700">Umferð:</span>
             <span className="ml-2 text-lg font-bold text-blue-600">{roundNumber}</span>
           </div>
           <div className="text-sm">
-            <span className="font-semibold text-gray-700">Score:</span>
+            <span className="font-semibold text-gray-700">Skor:</span>
             <span data-testid="score" className="ml-2 text-2xl font-bold text-green-600">{score}</span>
           </div>
         </div>
@@ -519,7 +519,7 @@ export const NotectorGame: React.FC = () => {
         {/* Muscle Memory: same bar loops forever */}
         {levelConfig.fixedBar && (gameState === 'playing') && (
           <span className="px-3 py-1.5 rounded-full bg-purple-100 text-purple-700 text-sm font-semibold border border-purple-300">
-            🔁 Looping this bar
+            🔁 Endurtek í lykkju
           </span>
         )}
 
@@ -527,11 +527,11 @@ export const NotectorGame: React.FC = () => {
         {levelConfig.repeatUntilPerfect && (gameState === 'playing') && (
           isRepeatingBar ? (
             <span className="px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 text-sm font-semibold border border-orange-300">
-              🔁 Repeating this bar
+              🔁 Endurtek þennan takt
             </span>
           ) : (
             <span className="px-3 py-1.5 rounded-full bg-green-100 text-green-700 text-sm font-semibold border border-green-300">
-              ✨ New bar
+              ✨ Nýr taktur
             </span>
           )
         )}
@@ -541,7 +541,7 @@ export const NotectorGame: React.FC = () => {
             onClick={startGame}
             className="px-8 py-3 bg-green-500 hover:bg-green-600 text-white text-lg font-semibold rounded-lg transition-colors"
           >
-            Start Practice
+            Byrja æfingu
           </button>
         )}
 
@@ -550,7 +550,7 @@ export const NotectorGame: React.FC = () => {
             onClick={stopGame}
             className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white text-lg font-semibold rounded-lg transition-colors"
           >
-            Stop
+            Stöðva
           </button>
         )}
 
@@ -565,13 +565,13 @@ export const NotectorGame: React.FC = () => {
           {inputMode === 'pick' && (gameState === 'playing') && (
             <span className="flex items-center gap-2 font-medium">
               <span className="text-2xl">⌨️</span>
-              Type the note name
+              Sláðu inn heiti nótunnar
             </span>
           )}
           {isListening && (
             <>
               <span className="text-2xl">🎤</span>
-              <span className="font-medium">Listening...</span>
+              <span className="font-medium">Hlusta...</span>
               {detectedNote && (
                 <span className="text-blue-600 font-semibold">({detectedNote})</span>
               )}
@@ -584,42 +584,42 @@ export const NotectorGame: React.FC = () => {
       <div className="flex-1 flex items-center justify-center p-4">
         {gameState === 'idle' && notes.length === 0 ? (
           <div className="text-center max-h-full overflow-y-auto w-full py-6">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Notector Practice</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Nótnaþjálfun</h2>
             <p className="text-xl text-gray-600 mb-8">
-              Practice notes C, D, E, F, G, A, B on the highest 3 strings
+              Æfðu nóturnar C, D, E, F, G, A, B á efstu 3 strengjunum
             </p>
 
             {level === 'muscle' ? (
               <div className="max-w-2xl mx-auto text-left space-y-5">
                 {/* Which bar to loop */}
                 <div className="p-4 bg-white rounded-lg border border-gray-300">
-                  <div className="font-semibold text-gray-900 mb-2">Which bar to loop?</div>
+                  <div className="font-semibold text-gray-900 mb-2">Hvaða takt á að endurtaka?</div>
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => selectBarSource('random')}
                       className={`px-3 py-2 rounded-lg border text-sm font-semibold ${barSource === 'random' ? 'bg-purple-500 text-white border-purple-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
                     >
-                      🎲 Random bar
+                      🎲 Slembinn taktur
                     </button>
                     {savedBars.map((bar) => (
                       <span key={bar.id} className={`flex items-center rounded-lg border ${barSource === bar.id ? 'bg-purple-500 text-white border-purple-600' : 'bg-white text-gray-700 border-gray-300'}`}>
                         <button onClick={() => selectBarSource(bar.id!)} className="px-3 py-2 text-sm font-semibold">
                           {bar.name} <span className="opacity-70">({bar.notes.map((n) => n.replace(/[0-9]/g, '')).join(' ')})</span>
                         </button>
-                        <button onClick={() => deleteBar(bar.id!)} title="Delete bar" className="px-2 py-2 text-sm hover:text-red-500">🗑</button>
+                        <button onClick={() => deleteBar(bar.id!)} title="Eyða takti" className="px-2 py-2 text-sm hover:text-red-500">🗑</button>
                       </span>
                     ))}
                   </div>
                   <p className="text-sm text-gray-500 mt-2">
                     {barSource === 'random'
-                      ? 'A fresh random 4-note bar is rolled when you start, then loops non-stop.'
-                      : 'This saved bar loops non-stop so you can drill it into muscle memory.'}
+                      ? 'Nýr slembinn 4-nótna taktur er valinn þegar þú byrjar, svo endurtekinn stanslaust.'
+                      : 'Þessi vistaði taktur endurtekst stanslaust svo þú getir æft hann inn í vöðvaminnið.'}
                   </p>
                 </div>
 
                 {/* Create a bar */}
                 <div className="p-4 bg-white rounded-lg border border-gray-300">
-                  <div className="font-semibold text-gray-900 mb-2">Create a bar ({BAR_LENGTH} notes)</div>
+                  <div className="font-semibold text-gray-900 mb-2">Búðu til takt ({BAR_LENGTH} nótur)</div>
                   <div className="flex flex-wrap gap-2 mb-3">
                     {BASIC_NOTES.map((note) => (
                       <button
@@ -633,19 +633,19 @@ export const NotectorGame: React.FC = () => {
                     ))}
                   </div>
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="text-sm text-gray-600">Sequence:</span>
+                    <span className="text-sm text-gray-600">Röð:</span>
                     <span className="font-mono font-bold text-lg">
                       {builderNotes.length ? builderNotes.map((n) => n.replace(/[0-9]/g, '')).join(' · ') : '—'}
                     </span>
-                    <button onClick={() => setBuilderNotes((prev) => prev.slice(0, -1))} disabled={!builderNotes.length} title="Remove last" className="ml-auto px-2 py-1 text-sm rounded border border-gray-300 disabled:opacity-40">⌫</button>
-                    <button onClick={() => setBuilderNotes([])} disabled={!builderNotes.length} className="px-2 py-1 text-sm rounded border border-gray-300 disabled:opacity-40">Clear</button>
+                    <button onClick={() => setBuilderNotes((prev) => prev.slice(0, -1))} disabled={!builderNotes.length} title="Fjarlægja síðustu" className="ml-auto px-2 py-1 text-sm rounded border border-gray-300 disabled:opacity-40">⌫</button>
+                    <button onClick={() => setBuilderNotes([])} disabled={!builderNotes.length} className="px-2 py-1 text-sm rounded border border-gray-300 disabled:opacity-40">Hreinsa</button>
                   </div>
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
                       value={builderName}
                       onChange={(e) => setBuilderName(e.target.value)}
-                      placeholder="Bar name"
+                      placeholder="Heiti takts"
                       maxLength={100}
                       className="px-3 py-2 border border-gray-300 rounded-lg text-sm flex-1"
                     />
@@ -654,7 +654,7 @@ export const NotectorGame: React.FC = () => {
                       disabled={builderNotes.length === 0 || !builderName.trim()}
                       className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-lg disabled:opacity-40"
                     >
-                      Save bar
+                      Vista takt
                     </button>
                   </div>
                 </div>
@@ -788,7 +788,7 @@ export const NotectorGame: React.FC = () => {
                       fontSize="16"
                       fill="#94a3b8"
                     >
-                      Bar {index + 1}
+                      Taktur {index + 1}
                     </text>
                   </g>
                 );
@@ -796,18 +796,18 @@ export const NotectorGame: React.FC = () => {
 
               {/* Legend */}
               <g transform="translate(60, 338)">
-                <text fontSize="18" fontWeight="bold" fill="#333">Legend:</text>
-                <circle cx={80} cy={-3} r={10} fill="#fff" stroke="#333" strokeWidth={2} />
-                <text x={100} fontSize="16" fill="#666">= Pending</text>
+                <text fontSize="18" fontWeight="bold" fill="#333">Skýring:</text>
+                <circle cx={90} cy={-3} r={10} fill="#fff" stroke="#333" strokeWidth={2} />
+                <text x={108} fontSize="16" fill="#666">= Bíður</text>
 
-                <circle cx={220} cy={-3} r={10} fill="#3b82f6" stroke="#1e40af" strokeWidth={2} />
-                <text x={240} fontSize="16" fill="#666">= Play Now!</text>
+                <circle cx={250} cy={-3} r={10} fill="#3b82f6" stroke="#1e40af" strokeWidth={2} />
+                <text x={268} fontSize="16" fill="#666">= Spilaðu núna!</text>
 
-                <circle cx={380} cy={-3} r={10} fill="#22c55e" stroke="#16a34a" strokeWidth={2} />
-                <text x={400} fontSize="16" fill="#666">= Correct</text>
+                <circle cx={470} cy={-3} r={10} fill="#22c55e" stroke="#16a34a" strokeWidth={2} />
+                <text x={488} fontSize="16" fill="#666">= Rétt</text>
 
-                <circle cx={520} cy={-3} r={10} fill="#ef4444" stroke="#dc2626" strokeWidth={2} />
-                <text x={540} fontSize="16" fill="#666">= Missed</text>
+                <circle cx={600} cy={-3} r={10} fill="#ef4444" stroke="#dc2626" strokeWidth={2} />
+                <text x={618} fontSize="16" fill="#666">= Missti</text>
               </g>
             </svg>
 
@@ -815,12 +815,12 @@ export const NotectorGame: React.FC = () => {
             {gameState === 'playing' && (
               <div className="mt-8 text-center">
                 <p className="text-2xl font-semibold text-gray-700">
-                  {levelConfig.name} Level - Round {roundNumber}
+                  {levelConfig.name} — Umferð {roundNumber}
                 </p>
                 <p className="text-lg text-gray-500 mt-2">
                   {inputMode === 'pick'
-                    ? 'Read the blue note and type its name (C D E F G A B)'
-                    : "Watch for the blue note - that's your cue to play!"}
+                    ? 'Lestu bláu nótuna og sláðu inn heiti hennar (C D E F G A B)'
+                    : 'Fylgstu með bláu nótunni — það er merkið þitt til að spila!'}
                 </p>
               </div>
             )}

@@ -13,12 +13,12 @@ export interface KeyOption {
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 export const KEYS: KeyOption[] = [
-  { label: 'C major', root: 0, mode: 'major' },
-  { label: 'G major', root: 7, mode: 'major' },
-  { label: 'D major', root: 2, mode: 'major' },
-  { label: 'A major', root: 9, mode: 'major' },
-  { label: 'A minor', root: 9, mode: 'minor' },
-  { label: 'E minor', root: 4, mode: 'minor' },
+  { label: 'C dúr', root: 0, mode: 'major' },
+  { label: 'G dúr', root: 7, mode: 'major' },
+  { label: 'D dúr', root: 2, mode: 'major' },
+  { label: 'A dúr', root: 9, mode: 'major' },
+  { label: 'A moll', root: 9, mode: 'minor' },
+  { label: 'E moll', root: 4, mode: 'minor' },
 ];
 
 export interface Progression {
@@ -28,13 +28,13 @@ export interface Progression {
 }
 
 export const PROGRESSIONS: Progression[] = [
-  { label: 'Pop (I–V–vi–IV)', degrees: [1, 5, 6, 4], modes: ['major'] },
-  { label: 'Classic (I–IV–V)', degrees: [1, 4, 5], modes: ['major'] },
+  { label: 'Popp (I–V–vi–IV)', degrees: [1, 5, 6, 4], modes: ['major'] },
+  { label: 'Klassísk (I–IV–V)', degrees: [1, 4, 5], modes: ['major'] },
   { label: '50s (I–vi–IV–V)', degrees: [1, 6, 4, 5], modes: ['major'] },
-  { label: 'Jazz (ii–V–I)', degrees: [2, 5, 1], modes: ['major'] },
-  { label: 'Andalusian (i–VI–III–VII)', degrees: [1, 6, 3, 7], modes: ['minor'] },
-  { label: 'Minor (i–iv–v)', degrees: [1, 4, 5], modes: ['minor'] },
-  { label: 'Minor pop (i–VI–VII)', degrees: [1, 6, 7], modes: ['minor'] },
+  { label: 'Djass (ii–V–I)', degrees: [2, 5, 1], modes: ['major'] },
+  { label: 'Andalúsísk (i–VI–III–VII)', degrees: [1, 6, 3, 7], modes: ['minor'] },
+  { label: 'Moll (i–iv–v)', degrees: [1, 4, 5], modes: ['minor'] },
+  { label: 'Moll-popp (i–VI–VII)', degrees: [1, 6, 7], modes: ['minor'] },
 ];
 
 // Diatonic triad quality per scale degree.

@@ -24,8 +24,8 @@ vi.mock('../../api/customBars', () => ({
 
 /** Put the game into Pick mode and start a round. */
 function startInPickMode() {
-  fireEvent.click(screen.getByRole('button', { name: /pick/i }))
-  fireEvent.click(screen.getByRole('button', { name: /start practice/i }))
+  fireEvent.click(screen.getByRole('button', { name: /velja/i }))       // Pick
+  fireEvent.click(screen.getByRole('button', { name: /byrja æfingu/i })) // Start Practice
 }
 
 describe('NotectorGame — Pick mode', () => {
@@ -80,7 +80,7 @@ describe('NotectorGame — Pick mode', () => {
     startInPickMode() // 4 notes, all C4 (Math.random -> 0); names off => none shown
     expect(screen.queryByText('C')).not.toBeInTheDocument()
 
-    const namesToggle = screen.getByRole('button', { name: /names/i })
+    const namesToggle = screen.getByRole('button', { name: /nöfn/i })
     fireEvent.click(namesToggle)
     expect(screen.getAllByText('C')).toHaveLength(4)
 
@@ -94,8 +94,8 @@ describe('NotectorGame — answer mode toggle', () => {
 
   it('defaults to Listen mode and offers a Pick toggle', () => {
     render(<NotectorGame />)
-    expect(screen.getByRole('button', { name: /listen/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /pick/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /hlusta/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /velja/i })).toBeInTheDocument()
   })
 })
 
@@ -105,7 +105,7 @@ describe('NotectorGame — Muscle Memory mode', () => {
   it('shows the bar builder and source picker when Muscle Memory is selected', () => {
     render(<NotectorGame />)
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'muscle' } })
-    expect(screen.getByText(/Create a bar/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Random bar/i })).toBeInTheDocument()
+    expect(screen.getByText(/Búðu til takt/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Slembinn taktur/i })).toBeInTheDocument()
   })
 })

@@ -73,7 +73,7 @@ export const ChordCard: React.FC<ChordCardProps> = ({
           <button
             onClick={handlePlayChord}
             className="p-2 hover:bg-green-100 rounded-full transition-colors"
-            title="Play chord"
+            title="Spila hljóm"
           >
             <svg
               className="w-8 h-8 text-green-600"

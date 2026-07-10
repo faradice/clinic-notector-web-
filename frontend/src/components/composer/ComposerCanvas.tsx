@@ -82,7 +82,7 @@ export const ComposerCanvas: React.FC = () => {
   }, []);
 
   const handleCreateWorkspace = async () => {
-    const name = prompt('Enter workspace name:');
+    const name = prompt('Sláðu inn heiti vinnusvæðis:');
     if (!name) return;
     try {
       setLoading(true);
@@ -98,7 +98,7 @@ export const ComposerCanvas: React.FC = () => {
 
   const handleDeleteWorkspace = async () => {
     if (!currentWorkspace) return;
-    if (!window.confirm(`Delete workspace "${currentWorkspace.name}"? This can't be undone.`)) return;
+    if (!window.confirm(`Eyða vinnusvæðinu „${currentWorkspace.name}“? Þetta er ekki hægt að afturkalla.`)) return;
     try {
       setLoading(true);
       const id = currentWorkspace.id!;
@@ -120,12 +120,12 @@ export const ComposerCanvas: React.FC = () => {
     if (!input) return;
     const generated = chordFromName(input);
     if (!generated) {
-      setAddChordError(`No shape for "${normalizeChordName(input)}" yet — try C, Am, G7, Dsus4, Cmaj7…`);
+      setAddChordError(`Ekkert grip til fyrir „${normalizeChordName(input)}“ enn — prófaðu C, Am, G7, Dsus4, Cmaj7…`);
       return;
     }
     const existing = chordLibrary.find((c) => c.name === generated.name);
     if (existing) {
-      setAddChordError(`"${generated.name}" is already in the library.`);
+      setAddChordError(`„${generated.name}“ er þegar í safninu.`);
       setNewChordName('');
       return;
     }
@@ -137,7 +137,7 @@ export const ComposerCanvas: React.FC = () => {
       setNewChordName('');
     } catch (e) {
       console.error('Failed to add chord:', e);
-      setAddChordError('Failed to save the chord.');
+      setAddChordError('Tókst ekki að vista hljóminn.');
     } finally {
       setLoading(false);
     }
@@ -295,7 +295,7 @@ export const ComposerCanvas: React.FC = () => {
       // New workspace; lay one chord per bar, 4 bars per row.
       const perRow = 4;
       let ws = await workspaceApi.create({
-        name: `${key.label} · ${prog.label} · ${bars} bars`,
+        name: `${key.label} · ${prog.label} · ${bars} taktar`,
         cards: [],
       });
       for (let i = 0; i < barNames.length; i++) {
@@ -371,20 +371,20 @@ export const ComposerCanvas: React.FC = () => {
         {/* Sidebar - Chord Library */}
         <div className="w-80 shrink-0 bg-white border-r border-gray-300 overflow-y-auto">
           <div className="p-4 border-b border-gray-300">
-            <h2 className="text-xl font-bold text-gray-900">Chord Library</h2>
-            <p className="text-sm text-gray-600 mt-1">Drag chords to the canvas</p>
+            <h2 className="text-xl font-bold text-gray-900">Hljómasafn</h2>
+            <p className="text-sm text-gray-600 mt-1">Dragðu hljóma á vinnusvæðið</p>
           </div>
 
           {/* Add a chord by name */}
           <div className="p-4 border-b border-gray-300 space-y-2">
-            <label className="text-sm font-semibold text-gray-700">Add a chord</label>
+            <label className="text-sm font-semibold text-gray-700">Bæta við hljómi</label>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={newChordName}
                 onChange={(e) => { setNewChordName(e.target.value); setAddChordError(null); }}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleAddChord(); }}
-                placeholder="e.g. C, Am, G7"
+                placeholder="t.d. C, Am, G7"
                 className="flex-1 min-w-0 px-2 py-1.5 border border-gray-300 rounded text-sm"
               />
               <button
@@ -392,7 +392,7 @@ export const ComposerCanvas: React.FC = () => {
                 disabled={loading || !newChordName.trim()}
                 className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded disabled:opacity-50 transition-colors"
               >
-                Add Chord
+                Bæta við
               </button>
             </div>
             {addChordError && <p className="text-xs text-red-600">{addChordError}</p>}
@@ -400,7 +400,7 @@ export const ComposerCanvas: React.FC = () => {
 
           {/* Generate a board from a key + common progression */}
           <div className="p-4 border-b border-gray-300 space-y-2">
-            <label className="text-sm font-semibold text-gray-700">New progression board</label>
+            <label className="text-sm font-semibold text-gray-700">Ný hljómaframvinda</label>
             <select
               value={keyIdx}
               onChange={(e) => { setKeyIdx(parseInt(e.target.value)); setProgIdx(0); }}
@@ -420,7 +420,7 @@ export const ComposerCanvas: React.FC = () => {
               ))}
             </select>
             <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600">Bars:</label>
+              <label className="text-sm text-gray-600">Taktar:</label>
               <input
                 type="number"
                 min={1}
@@ -428,7 +428,7 @@ export const ComposerCanvas: React.FC = () => {
                 value={bars}
                 onChange={(e) => setBars(Math.max(1, Math.min(32, parseInt(e.target.value) || 1)))}
                 className="w-20 px-2 py-1.5 border border-gray-300 rounded text-sm"
-                title="Number of bars — the progression repeats to fill them"
+                title="Fjöldi takta — framvindan endurtekur sig til að fylla þá"
               />
             </div>
             <button
@@ -436,7 +436,7 @@ export const ComposerCanvas: React.FC = () => {
               disabled={loading}
               className="w-full px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded disabled:opacity-50 transition-colors"
             >
-              Generate board
+              Búa til borð
             </button>
           </div>
 
@@ -445,7 +445,7 @@ export const ComposerCanvas: React.FC = () => {
               <LibraryChordItem key={`library-${chord.id}`} chord={chord} />
             ))}
             {chordLibrary.length === 0 && (
-              <div className="text-center text-gray-500 py-8">No chords in library</div>
+              <div className="text-center text-gray-500 py-8">Engir hljómar í safninu</div>
             )}
           </div>
         </div>
@@ -453,13 +453,13 @@ export const ComposerCanvas: React.FC = () => {
         {/* Main Canvas */}
         <div className="flex-1 flex flex-col">
           {/* Toolbar */}
-          <div className="bg-white border-b border-gray-300 p-4 flex items-center gap-4">
+          <div className="bg-white border-b border-gray-300 p-4 flex flex-wrap items-center gap-3">
             <select
               value={currentWorkspace?.id || ''}
               onChange={(e) => setCurrentWorkspace(workspaces.find((w) => w.id === parseInt(e.target.value)) || null)}
               className="px-4 py-2 border border-gray-300 rounded-lg"
             >
-              <option value="">Select Workspace</option>
+              <option value="">Veldu vinnusvæði</option>
               {workspaces.map((ws) => (
                 <option key={ws.id} value={ws.id}>{ws.name}</option>
               ))}
@@ -471,13 +471,13 @@ export const ComposerCanvas: React.FC = () => {
               className={`px-4 py-2 rounded-lg text-white transition-colors disabled:opacity-50 ${
                 isPlaying ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-500 hover:bg-green-600'
               }`}
-              title="Play the chords in order"
+              title="Spila hljómana í röð"
             >
-              {isPlaying ? '■ Stop' : '▶ Play'}
+              {isPlaying ? '■ Stöðva' : '▶ Spila'}
             </button>
 
             <div className="flex items-center gap-1">
-              <label className="text-sm text-gray-600">Tempo</label>
+              <label className="text-sm text-gray-600">Hraði</label>
               <input
                 type="number"
                 min={40}
@@ -485,7 +485,7 @@ export const ComposerCanvas: React.FC = () => {
                 value={playBpm}
                 onChange={(e) => setPlayBpm(Math.max(40, Math.min(200, parseInt(e.target.value) || 90)))}
                 className="w-16 px-2 py-1.5 border border-gray-300 rounded text-sm"
-                title="Playback tempo (BPM — one chord per beat)"
+                title="Spilunarhraði (bpm — einn hljómur á slag)"
               />
               <span className="text-xs text-gray-500">bpm</span>
             </div>
@@ -495,9 +495,9 @@ export const ComposerCanvas: React.FC = () => {
               className={`px-3 py-2 rounded-lg text-sm font-semibold border transition-colors ${
                 loop ? 'bg-indigo-500 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
               }`}
-              title="Loop the progression"
+              title="Endurtaka framvinduna í lykkju"
             >
-              🔁 Loop
+              🔁 Lykkja
             </button>
 
             <button
@@ -505,27 +505,27 @@ export const ComposerCanvas: React.FC = () => {
               disabled={loading}
               className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 transition-colors"
             >
-              New Workspace
+              Nýtt vinnusvæði
             </button>
 
             <button
               onClick={handleDeleteWorkspace}
               disabled={!currentWorkspace || loading}
               className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg disabled:opacity-50 transition-colors"
-              title="Delete the current workspace"
+              title="Eyða núverandi vinnusvæði"
             >
-              Delete Workspace
+              Eyða vinnusvæði
             </button>
             <button
               onClick={handleDeleteSelected}
               disabled={selectedCards.size === 0 || loading}
               className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg disabled:opacity-50 transition-colors"
             >
-              Delete Selected ({selectedCards.size})
+              Eyða völdum ({selectedCards.size})
             </button>
             <div className="ml-auto flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600">Zoom</label>
+                <label className="text-sm text-gray-600">Aðdráttur</label>
                 <input
                   type="range"
                   min={0.4}
@@ -534,11 +534,11 @@ export const ComposerCanvas: React.FC = () => {
                   value={cardScale}
                   onChange={(e) => setCardScale(parseFloat(e.target.value))}
                   className="w-28 accent-blue-500"
-                  title="Card size"
+                  title="Stærð spjalda"
                 />
                 <span className="text-xs text-gray-500 w-9">{Math.round(cardScale * 100)}%</span>
               </div>
-              <div className="text-sm text-gray-600">{currentWorkspace?.cards.length || 0} cards</div>
+              <div className="text-sm text-gray-600">{currentWorkspace?.cards.length || 0} spjöld</div>
             </div>
           </div>
 
@@ -569,7 +569,7 @@ export const ComposerCanvas: React.FC = () => {
               })
             ) : (
               <div className="flex items-center justify-center h-full text-gray-500">
-                Select or create a workspace to begin
+                Veldu eða búðu til vinnusvæði til að byrja
               </div>
             )}
           </div>
@@ -596,7 +596,7 @@ export const ComposerCanvas: React.FC = () => {
               onClick={handleDeleteSelected}
               className="w-full px-4 py-2 text-left hover:bg-gray-100 text-red-600"
             >
-              Delete
+              Eyða
             </button>
           </div>
         )}
