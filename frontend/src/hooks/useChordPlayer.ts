@@ -1,16 +1,21 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback } from 'react';
 import * as Tone from 'tone';
 import type { ChordFretPosition } from '../api/chords';
 
 // Standard guitar tuning (low E to high E)
 const STANDARD_TUNING = ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'];
 
-export const useChordPlayer = () => {
-  const synthRef = useRef<Tone.PolySynth | null>(null);
+// A SINGLE synth shared by the whole app. Every ChordCard and the progression
+// player route through this one instance, so releaseAll() from any caller cuts
+// *all* ringing notes. With a per-hook synth, clicking chord A then chord B left
+// A's own synth ringing its half-note out — B's releaseAll couldn't reach it —
+// and the two overlapping voices scrambled. One shared synth makes each new
+// strum silence whatever came before, regardless of which card triggered it.
+let sharedSynth: Tone.PolySynth | null = null;
 
-  useEffect(() => {
-    // Initialize PolySynth with a clean guitar-like sound
-    synthRef.current = new Tone.PolySynth(Tone.Synth, {
+function getSynth(): Tone.PolySynth {
+  if (!sharedSynth) {
+    sharedSynth = new Tone.PolySynth(Tone.Synth, {
       oscillator: {
         type: 'triangle',
       },
@@ -21,15 +26,14 @@ export const useChordPlayer = () => {
         release: 1,
       },
     }).toDestination();
+  }
+  return sharedSynth;
+}
 
-    return () => {
-      synthRef.current?.dispose();
-    };
-  }, []);
-
+export const useChordPlayer = () => {
   const playChord = useCallback(async (positions: ChordFretPosition[]) => {
-    if (!synthRef.current) return;
     await Tone.start();
+    const synth = getSynth();
 
     const notes = positionsToNotes(positions);
     if (notes.length === 0) return;
@@ -37,20 +41,20 @@ export const useChordPlayer = () => {
     // Release any still-ringing chord first, then attack a hair later — otherwise
     // overlapping (esp. shared) notes pile up and scramble on quick changes.
     const now = Tone.now();
-    synthRef.current.releaseAll(now);
-    synthRef.current.triggerAttackRelease(notes, '2n', now + 0.02);
+    synth.releaseAll(now);
+    synth.triggerAttackRelease(notes, '2n', now + 0.02);
   }, []);
 
   const playNote = useCallback(async (stringNumber: number, fret: number) => {
-    if (!synthRef.current) return;
     await Tone.start();
+    const synth = getSynth();
     const note = calculateNote(stringNumber, fret);
-    synthRef.current.triggerAttackRelease([note], '8n');
+    synth.triggerAttackRelease([note], '8n');
   }, []);
 
   /** Cut any currently-ringing notes immediately. */
   const stopAll = useCallback(() => {
-    synthRef.current?.releaseAll();
+    sharedSynth?.releaseAll();
   }, []);
 
   return { playChord, playNote, stopAll };
