@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { DndContext, DragOverlay, MouseSensor, useSensor, useSensors, useDraggable } from '@dnd-kit/core';
-import type { Chord } from '../../api/chords';
+import type { Chord, ChordFretPosition } from '../../api/chords';
 import { chordApi } from '../../api/chords';
 import type { Workspace, WorkspaceCard, CardPositionUpdate } from '../../api/workspaces';
 import { workspaceApi } from '../../api/workspaces';
@@ -9,6 +9,7 @@ import { ChordCard } from './ChordCard';
 import { MiniChordViewer } from './MiniChordViewer';
 import { chordFromName, normalizeChordName, samePositions } from './chordFromName';
 import { KEYS, progressionsForMode, chordsFor } from './progressions';
+import { useChordPlayer } from '../../hooks/useChordPlayer';
 
 /** A chord in the sidebar library — a @dnd-kit draggable source. */
 const LibraryChordItem: React.FC<{ chord: Chord }> = ({ chord }) => {
@@ -50,6 +51,10 @@ export const ComposerCanvas: React.FC = () => {
   const [bars, setBars] = useState(4);
 
   const canvasRef = useRef<HTMLDivElement>(null);
+
+  const { playChord, stopAll } = useChordPlayer();
+  const [isPlaying, setIsPlaying] = useState(false);
+  const playTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } })
@@ -306,6 +311,37 @@ export const ComposerCanvas: React.FC = () => {
     }
   };
 
+  const stopProgression = useCallback(() => {
+    playTimeoutsRef.current.forEach(clearTimeout);
+    playTimeoutsRef.current = [];
+    stopAll();
+    setIsPlaying(false);
+  }, [stopAll]);
+
+  // Play the board's chords in order (reading order: row by row, left to right).
+  const handlePlayProgression = () => {
+    if (!currentWorkspace) return;
+    const ordered = [...currentWorkspace.cards].sort((a, b) => {
+      if (Math.abs(a.positionY - b.positionY) > 40) return a.positionY - b.positionY;
+      return a.positionX - b.positionX;
+    });
+    const seq = ordered
+      .map((c) => getChordForCard(c)?.fretPositions)
+      .filter((p): p is ChordFretPosition[] => !!p && p.length > 0);
+    if (seq.length === 0) return;
+
+    stopProgression();
+    setIsPlaying(true);
+    const msPerChord = 1000;
+    seq.forEach((positions, i) => {
+      playTimeoutsRef.current.push(setTimeout(() => playChord(positions), i * msPerChord));
+    });
+    playTimeoutsRef.current.push(setTimeout(() => setIsPlaying(false), seq.length * msPerChord + 400));
+  };
+
+  // Stop playback if the component unmounts (e.g. tab switch).
+  useEffect(() => () => { playTimeoutsRef.current.forEach(clearTimeout); }, []);
+
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex h-screen bg-gray-50">
@@ -405,6 +441,18 @@ export const ComposerCanvas: React.FC = () => {
                 <option key={ws.id} value={ws.id}>{ws.name}</option>
               ))}
             </select>
+
+            <button
+              onClick={isPlaying ? stopProgression : handlePlayProgression}
+              disabled={!currentWorkspace || (currentWorkspace?.cards.length ?? 0) === 0}
+              className={`px-4 py-2 rounded-lg text-white transition-colors disabled:opacity-50 ${
+                isPlaying ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-500 hover:bg-green-600'
+              }`}
+              title="Play the chords in order"
+            >
+              {isPlaying ? '■ Stop' : '▶ Play'}
+            </button>
+
             <button
               onClick={handleCreateWorkspace}
               disabled={loading}
