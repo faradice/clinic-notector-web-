@@ -1,0 +1,303 @@
+<title>Tóneyra — one-pager</title>
+<style>
+  :root {
+    /* neutrals with a slight pine bias — chosen, not defaulted */
+    --bg: #f3f5f0;
+    --surface: #fbfcf9;
+    --raised: #eef1ea;
+    --text: #17231d;
+    --text-soft: #4c5a51;
+    --border: #dbe0d5;
+    /* accents: a deep pine + the "in-tune" spring green, warm brass for marks */
+    --accent: #12684a;
+    --accent-2: #23a173;
+    --warm: #ab7a2f;
+    --shadow: 0 1px 2px rgba(20,40,30,.05), 0 12px 32px -14px rgba(20,50,36,.22);
+
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1813;
+      --surface: #16241d;
+      --raised: #1b2b23;
+      --text: #e9efe9;
+      --text-soft: #9db0a5;
+      --border: #26342b;
+      --accent: #35c489;
+      --accent-2: #5ad6a2;
+      --warm: #d7a352;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 16px 40px -18px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f3f5f0; --surface: #fbfcf9; --raised: #eef1ea; --text: #17231d;
+    --text-soft: #4c5a51; --border: #dbe0d5; --accent: #12684a; --accent-2: #23a173;
+    --warm: #ab7a2f; --shadow: 0 1px 2px rgba(20,40,30,.05), 0 12px 32px -14px rgba(20,50,36,.22);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1813; --surface: #16241d; --raised: #1b2b23; --text: #e9efe9;
+    --text-soft: #9db0a5; --border: #26342b; --accent: #35c489; --accent-2: #5ad6a2;
+    --warm: #d7a352; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 16px 40px -18px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); }
+
+  .page {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: clamp(2rem, 5vw, 4rem) clamp(1.25rem, 4vw, 2.5rem) 4rem;
+  }
+
+  .eyebrow {
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .16em;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .eyebrow .draft { color: var(--warm); }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(2.4rem, 7vw, 3.5rem);
+    line-height: 1.02;
+    letter-spacing: -.01em;
+    text-wrap: balance;
+    margin: .5rem 0 0;
+  }
+  h1 .tm { font-family: var(--sans); font-size: .8rem; font-weight: 600; color: var(--text-soft);
+           letter-spacing: .02em; vertical-align: super; margin-left: .5rem; }
+  .lead {
+    font-size: clamp(1.1rem, 2.4vw, 1.3rem);
+    line-height: 1.5;
+    color: var(--text-soft);
+    max-width: 34rem;
+    margin: 1.1rem 0 0;
+  }
+
+  .demo {
+    display: inline-flex; align-items: center; gap: .6rem;
+    margin-top: 1.6rem;
+    padding: .7rem 1rem .7rem 1.05rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent-2);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    text-decoration: none; color: var(--text);
+    font-size: .95rem;
+    transition: border-color .15s ease, transform .15s ease;
+  }
+  .demo:hover { border-left-color: var(--accent); transform: translateY(-1px); }
+  .demo .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-2); flex: none;
+               box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-2) 22%, transparent); }
+  .demo .label { font-weight: 600; }
+  .demo .url { font-family: var(--mono); color: var(--accent); font-size: .82rem; word-break: break-all; }
+
+  /* tuner-center divider: a hairline with a center tick, echoing "in tune" */
+  .rule { position: relative; height: 1px; background: var(--border); margin: 3rem 0; }
+  .rule::after { content: ""; position: absolute; left: 50%; top: -3px; width: 2px; height: 7px;
+                 background: var(--accent-2); transform: translateX(-50%); border-radius: 1px; }
+
+  section > h2 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 1.4rem;
+    letter-spacing: -.005em;
+    margin: 0 0 .35rem;
+  }
+  section p { font-size: 1.06rem; line-height: 1.62; color: var(--text-soft); margin: .5rem 0 0; }
+  section p strong { color: var(--text); font-weight: 600; }
+
+  .tools { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; margin-top: 1.25rem; }
+  @media (max-width: 34rem) { .tools { grid-template-columns: 1fr; } }
+  .tool {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 1.05rem 1.1rem; box-shadow: var(--shadow);
+  }
+  .tool .name { font-weight: 700; font-size: 1.02rem; display: flex; align-items: baseline; gap: .5rem; }
+  .tool .name .k { font-family: var(--mono); font-size: .7rem; color: var(--accent); font-weight: 600;
+                   text-transform: uppercase; letter-spacing: .08em; }
+  .tool p { font-size: .95rem; line-height: 1.5; margin-top: .35rem; color: var(--text-soft); }
+
+  .note { margin-top: 1rem; font-size: .95rem; color: var(--text-soft); }
+  .note b { color: var(--accent); font-weight: 600; }
+
+  blockquote {
+    margin: 1.4rem 0 0; padding: .3rem 0 .3rem 1.3rem;
+    border-left: 3px solid var(--warm);
+    font-family: var(--serif); font-size: 1.4rem; line-height: 1.34; font-style: italic;
+    color: var(--text); text-wrap: balance;
+  }
+  blockquote cite { display: block; margin-top: .7rem; font-family: var(--sans); font-style: normal;
+                    font-size: .85rem; letter-spacing: .02em; color: var(--text-soft); }
+
+  ul.clean { list-style: none; margin: .9rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .55rem; }
+  ul.clean li { position: relative; padding-left: 1.4rem; font-size: 1.02rem; line-height: 1.5; color: var(--text-soft); }
+  ul.clean li::before { content: ""; position: absolute; left: .1rem; top: .55em; width: 7px; height: 7px;
+                        border-radius: 2px; background: var(--accent-2); }
+  ul.clean li strong { color: var(--text); font-weight: 600; }
+
+  .ask {
+    margin-top: 1.25rem; background: var(--raised); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.25rem 1.35rem;
+  }
+  .ask h2 { margin-top: 0; }
+
+  .steps { list-style: none; margin: 1.15rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .95rem; }
+  .steps li { position: relative; padding-left: 2.7rem; }
+  .steps li .n {
+    position: absolute; left: 0; top: 0; width: 1.85rem; height: 1.85rem; border-radius: 50%;
+    display: grid; place-items: center;
+    font-family: var(--mono); font-weight: 600; font-size: .85rem; color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
+  }
+  .steps li h3 { margin: 0; font-size: 1.03rem; font-weight: 700; color: var(--text); }
+  .steps li p { margin: .18rem 0 0; font-size: .97rem; line-height: 1.5; }
+
+  footer { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--border);
+           font-size: .82rem; line-height: 1.6; color: var(--text-soft); }
+  footer .mono { font-family: var(--mono); font-size: .78rem; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .page > * { animation: rise .5s ease both; }
+    .page > *:nth-child(2) { animation-delay: .04s; }
+    @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  }
+</style>
+
+<main class="page">
+  <p class="eyebrow">Music‑school practice software · <span class="draft">working draft</span></p>
+
+  <h1>Tóneyra<span class="tm">working title</span></h1>
+
+  <p class="lead">
+    Hands‑on practice software for music schools — tune, detect chords, train
+    reading and ear, and build chord progressions, all in the browser with
+    real‑time feedback from the microphone. Nothing to install.
+  </p>
+
+  <a class="demo" href="https://organised-charter-develops-eminem.trycloudflare.com" target="_blank" rel="noopener">
+    <span class="dot"></span>
+    <span class="label">Live demo</span>
+    <span class="url">organised-charter-develops-eminem.trycloudflare.com</span>
+  </a>
+
+  <div class="rule"></div>
+
+  <section>
+    <h2>The gap</h2>
+    <p>
+      Music schools teach the <strong>practical craft</strong> — tuning, chords,
+      timing, reading, playing by ear. But the software that exists sits at two
+      extremes: consumer apps built for solo gamified practice, or abstract
+      theory drills. Almost nothing is built for how a <strong>teacher</strong>
+      actually works on the hands‑and‑ears skills, or lets a student get honest
+      feedback on their playing between lessons.
+    </p>
+  </section>
+
+  <section>
+    <h2>What it is</h2>
+    <p>Four practical tools, one browser tab — working on the devices schools already have:</p>
+    <div class="tools">
+      <div class="tool">
+        <div class="name"><span class="k">01</span> Tuner</div>
+        <p>Accurate real‑time pitch from the mic, down to the low E. Tune by the needle — or hide it and tune by ear against a played reference.</p>
+      </div>
+      <div class="tool">
+        <div class="name"><span class="k">02</span> Chord Detector</div>
+        <p>Strum a chord and it names it and draws the shape — real polyphonic detection that ignores the string's overtones.</p>
+      </div>
+      <div class="tool">
+        <div class="name"><span class="k">03</span> Reading &amp; ear trainer</div>
+        <p>A practice game that listens to what you play and builds note‑reading and pitch accuracy, one bar at a time, at your own tempo.</p>
+      </div>
+      <div class="tool">
+        <div class="name"><span class="k">04</span> Progression builder</div>
+        <p>Pick a key and a common progression, hear it play back, loop it, tweak it, and save it — turning theory into something you can actually play along to.</p>
+      </div>
+    </div>
+    <p class="note"><b>No install, browser‑based, mic‑powered.</b> Works on a school's Chromebooks, iPads and laptops as‑is.</p>
+  </section>
+
+  <div class="rule"></div>
+
+  <section>
+    <h2>Why now, and why me</h2>
+    <p>
+      I'm a working musician. I built the first version as a tool for my own
+      practice — and it worked: my sight‑reading is already noticeably better.
+      That's the whole thesis. The tools I wanted didn't exist with this
+      practical functionality, so I made them.
+    </p>
+    <blockquote>
+      "I built this to fix my own practice — and my note‑reading is already much better."
+      <cite>— Founder, musician &amp; builder</cite>
+    </blockquote>
+  </section>
+
+  <section>
+    <h2>Who it's for</h2>
+    <ul class="clean">
+      <li><strong>Music schools &amp; their teachers</strong> — practical tools for lessons and for setting home practice.</li>
+      <li><strong>Students</strong> — honest, real‑time feedback on tuning, chords, reading and timing between lessons.</li>
+      <li><strong>The teacher who wants to see</strong> that practice actually happened — the foundation for progress tracking.</li>
+    </ul>
+  </section>
+
+  <div class="ask">
+    <h2>The ask — a summer demo, then a pilot</h2>
+    <p>
+      Teachers are flexible over the summer break — the right moment to gather a
+      handful of school leaders for a hands‑on session, learn what they need, and
+      line up a small pilot. What we most want to hear from them:
+    </p>
+    <ul class="clean">
+      <li>What do students actually <strong>struggle to practice at home</strong>?</li>
+      <li>What can a teacher <strong>not see</strong> about a student's practice between lessons?</li>
+      <li>If this existed, <strong>who decides to buy</strong> — the teacher, the school, the parent?</li>
+    </ul>
+  </div>
+
+  <section>
+    <h2>How a pilot would work</h2>
+    <p>Low commitment, no cost — built to <strong>learn</strong>, not to sell.</p>
+    <ol class="steps">
+      <li>
+        <span class="n">1</span>
+        <h3>Start small</h3>
+        <p>One to three schools and a handful of teachers who actually want in.</p>
+      </li>
+      <li>
+        <span class="n">2</span>
+        <h3>Free for a term</h3>
+        <p>Teachers and their students use the tools in lessons and for home practice. I handle setup and support myself.</p>
+      </li>
+      <li>
+        <span class="n">3</span>
+        <h3>Watch what gets used</h3>
+        <p>We check in every couple of weeks — what helps, what's missing, what a teacher wishes it did.</p>
+      </li>
+      <li>
+        <span class="n">4</span>
+        <h3>Decide together</h3>
+        <p>At the end we decide whether it's worth paying for, and what a school version needs next — student accounts, progress tracking, and the rest.</p>
+      </li>
+    </ol>
+    <p class="note"><b>No cost, no lock‑in</b>, and a direct line to the person building it.</p>
+  </section>
+
+  <footer>
+    Working draft for internal discussion — product, name and branding are open.
+    The live demo above is a temporary link running from a laptop for showing
+    people; a stable, hosted version comes with the pilot.
+    <span class="mono"></span>
+  </footer>
+</main>

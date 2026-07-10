@@ -1,0 +1,237 @@
+<title>Tóneyra — kynningarblað</title>
+<style>
+  :root {
+    --bg: #f3f5f0;
+    --surface: #fbfcf9;
+    --raised: #eef1ea;
+    --text: #17231d;
+    --text-soft: #4c5a51;
+    --border: #dbe0d5;
+    --accent: #12684a;
+    --accent-2: #23a173;
+    --warm: #ab7a2f;
+    --shadow: 0 1px 2px rgba(20,40,30,.05), 0 12px 32px -14px rgba(20,50,36,.22);
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1813; --surface: #16241d; --raised: #1b2b23; --text: #e9efe9;
+      --text-soft: #9db0a5; --border: #26342b; --accent: #35c489; --accent-2: #5ad6a2;
+      --warm: #d7a352; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 16px 40px -18px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f3f5f0; --surface: #fbfcf9; --raised: #eef1ea; --text: #17231d;
+    --text-soft: #4c5a51; --border: #dbe0d5; --accent: #12684a; --accent-2: #23a173;
+    --warm: #ab7a2f; --shadow: 0 1px 2px rgba(20,40,30,.05), 0 12px 32px -14px rgba(20,50,36,.22);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1813; --surface: #16241d; --raised: #1b2b23; --text: #e9efe9;
+    --text-soft: #9db0a5; --border: #26342b; --accent: #35c489; --accent-2: #5ad6a2;
+    --warm: #d7a352; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 16px 40px -18px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); }
+  .page { max-width: 46rem; margin: 0 auto; padding: clamp(2rem, 5vw, 4rem) clamp(1.25rem, 4vw, 2.5rem) 4rem; }
+
+  .eyebrow { font-size: .72rem; text-transform: uppercase; letter-spacing: .14em; font-weight: 600; color: var(--accent); }
+  .eyebrow .draft { color: var(--warm); }
+
+  h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(2.4rem, 7vw, 3.5rem);
+       line-height: 1.02; letter-spacing: -.01em; text-wrap: balance; margin: .5rem 0 0; }
+  h1 .tm { font-family: var(--sans); font-size: .8rem; font-weight: 600; color: var(--text-soft);
+           letter-spacing: .02em; vertical-align: super; margin-left: .5rem; }
+  .lead { font-size: clamp(1.1rem, 2.4vw, 1.3rem); line-height: 1.5; color: var(--text-soft);
+          max-width: 34rem; margin: 1.1rem 0 0; }
+
+  .demo { display: inline-flex; align-items: center; gap: .6rem; margin-top: 1.6rem;
+          padding: .7rem 1rem .7rem 1.05rem; background: var(--surface); border: 1px solid var(--border);
+          border-left: 3px solid var(--accent-2); border-radius: 10px; box-shadow: var(--shadow);
+          text-decoration: none; color: var(--text); font-size: .95rem;
+          transition: border-color .15s ease, transform .15s ease; }
+  .demo:hover { border-left-color: var(--accent); transform: translateY(-1px); }
+  .demo .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-2); flex: none;
+               box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-2) 22%, transparent); }
+  .demo .label { font-weight: 600; }
+  .demo .url { font-family: var(--mono); color: var(--accent); font-size: .82rem; word-break: break-all; }
+
+  .rule { position: relative; height: 1px; background: var(--border); margin: 3rem 0; }
+  .rule::after { content: ""; position: absolute; left: 50%; top: -3px; width: 2px; height: 7px;
+                 background: var(--accent-2); transform: translateX(-50%); border-radius: 1px; }
+
+  section > h2 { font-family: var(--serif); font-weight: 600; font-size: 1.4rem; letter-spacing: -.005em; margin: 0 0 .35rem; }
+  section p { font-size: 1.06rem; line-height: 1.62; color: var(--text-soft); margin: .5rem 0 0; }
+  section p strong { color: var(--text); font-weight: 600; }
+
+  .tools { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; margin-top: 1.25rem; }
+  @media (max-width: 34rem) { .tools { grid-template-columns: 1fr; } }
+  .tool { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.05rem 1.1rem; box-shadow: var(--shadow); }
+  .tool .name { font-weight: 700; font-size: 1.02rem; display: flex; align-items: baseline; gap: .5rem; }
+  .tool .name .k { font-family: var(--mono); font-size: .7rem; color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+  .tool p { font-size: .95rem; line-height: 1.5; margin-top: .35rem; color: var(--text-soft); }
+
+  .note { margin-top: 1rem; font-size: .95rem; color: var(--text-soft); }
+  .note b { color: var(--accent); font-weight: 600; }
+
+  blockquote { margin: 1.4rem 0 0; padding: .3rem 0 .3rem 1.3rem; border-left: 3px solid var(--warm);
+               font-family: var(--serif); font-size: 1.4rem; line-height: 1.34; font-style: italic;
+               color: var(--text); text-wrap: balance; }
+  blockquote cite { display: block; margin-top: .7rem; font-family: var(--sans); font-style: normal;
+                    font-size: .85rem; letter-spacing: .02em; color: var(--text-soft); }
+
+  ul.clean { list-style: none; margin: .9rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .55rem; }
+  ul.clean li { position: relative; padding-left: 1.4rem; font-size: 1.02rem; line-height: 1.5; color: var(--text-soft); }
+  ul.clean li::before { content: ""; position: absolute; left: .1rem; top: .55em; width: 7px; height: 7px; border-radius: 2px; background: var(--accent-2); }
+  ul.clean li strong { color: var(--text); font-weight: 600; }
+
+  .ask { margin-top: 1.25rem; background: var(--raised); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem 1.35rem; }
+  .ask h2 { margin-top: 0; }
+
+  .steps { list-style: none; margin: 1.15rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .95rem; }
+  .steps li { position: relative; padding-left: 2.7rem; }
+  .steps li .n { position: absolute; left: 0; top: 0; width: 1.85rem; height: 1.85rem; border-radius: 50%;
+    display: grid; place-items: center; font-family: var(--mono); font-weight: 600; font-size: .85rem; color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent); }
+  .steps li h3 { margin: 0; font-size: 1.03rem; font-weight: 700; color: var(--text); }
+  .steps li p { margin: .18rem 0 0; font-size: .97rem; line-height: 1.5; }
+
+  footer { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--border); font-size: .82rem; line-height: 1.6; color: var(--text-soft); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .page > * { animation: rise .5s ease both; }
+    .page > *:nth-child(2) { animation-delay: .04s; }
+    @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  }
+</style>
+
+<main class="page">
+  <p class="eyebrow">Æfingahugbúnaður fyrir tónlistarskóla · <span class="draft">vinnuskjal</span></p>
+
+  <h1>Tóneyra<span class="tm">vinnuheiti</span></h1>
+
+  <p class="lead">
+    Hagnýtur æfingahugbúnaður fyrir tónlistarskóla — stilltu, greindu hljóma,
+    þjálfaðu nótnalestur og tóneyra, og búðu til hljómaframvindur, allt í vafranum
+    með rauntíma-svörun frá hljóðnemanum. Ekkert að setja upp.
+  </p>
+
+  <a class="demo" href="https://organised-charter-develops-eminem.trycloudflare.com" target="_blank" rel="noopener">
+    <span class="dot"></span>
+    <span class="label">Sýnishorn í beinni</span>
+    <span class="url">organised-charter-develops-eminem.trycloudflare.com</span>
+  </a>
+
+  <div class="rule"></div>
+
+  <section>
+    <h2>Vandinn</h2>
+    <p>
+      Tónlistarskólar kenna hina <strong>hagnýtu iðn</strong> — stillingu, hljóma,
+      takt, nótnalestur, að spila eftir eyranu. En hugbúnaðurinn sem til er situr á
+      tveimur öfgum: neytendaforrit hönnuð fyrir spilvædda einkaæfingu, eða
+      óhlutbundnar fræðiæfingar. Nánast ekkert er byggt fyrir hvernig
+      <strong>kennari</strong> vinnur í raun með hendur-og-eyru færnina, eða leyfir
+      nemanda að fá heiðarlega svörun á spilamennskuna sína milli tíma.
+    </p>
+  </section>
+
+  <section>
+    <h2>Hvað þetta er</h2>
+    <p>Fjögur hagnýt verkfæri, einn vafraflipi — virka á tækjunum sem skólarnir eiga nú þegar:</p>
+    <div class="tools">
+      <div class="tool">
+        <div class="name"><span class="k">01</span> Stillir</div>
+        <p>Nákvæm rauntíma-tónhæð frá hljóðnemanum, alveg niður á lága E. Stilltu eftir nálinni — eða feldu hana og stilltu eftir eyranu á móti spiluðum tóni.</p>
+      </div>
+      <div class="tool">
+        <div class="name"><span class="k">02</span> Hljómagreinir</div>
+        <p>Sláðu hljóm og forritið nefnir hann og teiknar gripið — raunveruleg fjölradda-greining sem hunsar yfirtóna strengsins.</p>
+      </div>
+      <div class="tool">
+        <div class="name"><span class="k">03</span> Nótna- og heyrnarþjálfun</div>
+        <p>Æfingaleikur sem hlustar á það sem þú spilar og byggir upp nótnalestur og tónhæðarnákvæmni, einn takt í einu, á þínum hraða.</p>
+      </div>
+      <div class="tool">
+        <div class="name"><span class="k">04</span> Hljómasmiðja</div>
+        <p>Veldu tóntegund og algenga hljómaframvindu, heyrðu hana spilaða, hafðu hana í lykkju, breyttu og vistaðu — fræðin verða að einhverju sem þú getur spilað með.</p>
+      </div>
+    </div>
+    <p class="note"><b>Ekkert að setja upp, keyrir í vafra, knúið af hljóðnema.</b> Virkar á Chromebook-um, iPad-um og fartölvum skólans eins og þau eru.</p>
+  </section>
+
+  <div class="rule"></div>
+
+  <section>
+    <h2>Af hverju núna, og af hverju ég</h2>
+    <p>
+      Ég er starfandi tónlistarmaður. Ég smíðaði fyrstu útgáfuna sem verkfæri fyrir
+      mína eigin æfingu — og það virkaði: nótnalesturinn minn er þegar orðinn
+      töluvert betri. Það er kjarninn í öllu. Verkfærin sem mig vantaði voru ekki
+      til með þessari hagnýtu virkni, svo ég bjó þau til.
+    </p>
+    <blockquote>
+      „Ég smíðaði þetta til að laga mína eigin æfingu — og nótnalesturinn minn er þegar miklu betri."
+      <cite>— Stofnandi, tónlistarmaður</cite>
+    </blockquote>
+  </section>
+
+  <section>
+    <h2>Fyrir hverja</h2>
+    <ul class="clean">
+      <li><strong>Tónlistarskóla og kennara þeirra</strong> — hagnýt verkfæri fyrir tímana og fyrir heimaæfingu.</li>
+      <li><strong>Nemendur</strong> — heiðarleg rauntíma-svörun á stillingu, hljóma, nótnalestur og takt milli tíma.</li>
+      <li><strong>Kennarann sem vill sjá</strong> að æfingin hafi raunverulega átt sér stað — grunnurinn að framvindu-eftirfylgni.</li>
+    </ul>
+  </section>
+
+  <div class="ask">
+    <h2>Það sem við biðjum um — kynning í sumar, svo tilraunaverkefni</h2>
+    <p>
+      Kennarar hafa svigrúm yfir sumarfríið — rétti tíminn til að kalla saman nokkra
+      skólastjórnendur í verklega kynningu, læra hvað þá vantar, og setja upp lítið
+      tilraunaverkefni. Það sem okkur langar mest að heyra frá þeim:
+    </p>
+    <ul class="clean">
+      <li>Hvað eiga nemendur raunverulega <strong>erfitt með að æfa heima</strong>?</li>
+      <li>Hvað getur kennari <strong>ekki séð</strong> um æfingu nemanda milli tíma?</li>
+      <li>Ef þetta væri til — <strong>hver tekur ákvörðun um að kaupa</strong>: kennarinn, skólinn, foreldrið?</li>
+    </ul>
+  </div>
+
+  <section>
+    <h2>Hvernig tilraunaverkefni myndi virka</h2>
+    <p>Lítil skuldbinding, enginn kostnaður — hannað til að <strong>læra</strong>, ekki selja.</p>
+    <ol class="steps">
+      <li>
+        <span class="n">1</span>
+        <h3>Byrja smátt</h3>
+        <p>Einn til þrír skólar og nokkrir kennarar sem raunverulega vilja vera með.</p>
+      </li>
+      <li>
+        <span class="n">2</span>
+        <h3>Frítt í eina önn</h3>
+        <p>Kennarar og nemendur þeirra nota verkfærin í tímum og við heimaæfingu. Ég sé sjálfur um uppsetningu og stuðning.</p>
+      </li>
+      <li>
+        <span class="n">3</span>
+        <h3>Fylgjast með hvað er notað</h3>
+        <p>Við tökum stöðuna á nokkurra vikna fresti — hvað hjálpar, hvað vantar, hvað kennari óskar að það gæti gert.</p>
+      </li>
+      <li>
+        <span class="n">4</span>
+        <h3>Ákveða saman</h3>
+        <p>Í lokin ákveðum við hvort þetta sé þess virði að borga fyrir, og hvað skólaútgáfa þarf næst — nemendaaðganga, framvindu-eftirfylgni og annað.</p>
+      </li>
+    </ol>
+    <p class="note"><b>Enginn kostnaður, engin binding</b>, og bein lína í þann sem smíðar þetta.</p>
+  </section>
+
+  <footer>
+    Vinnuskjal til innri umræðu — vara, nafn og vörumerki eru opin. Sýnishornshlekkurinn
+    hér að ofan er tímabundinn og keyrir af fartölvu til að sýna fólki; stöðug, hýst
+    útgáfa kemur með tilraunaverkefninu.
+  </footer>
+</main>
