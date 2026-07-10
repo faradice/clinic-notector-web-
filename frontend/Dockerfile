@@ -11,6 +11,10 @@ RUN npm ci
 # Copy source
 COPY . .
 
+# Call the API on the same origin ("/api"), which nginx proxies to the backend.
+# This makes the build work behind any host (tunnel, cloud, custom domain).
+ENV VITE_API_BASE_URL=/api
+
 # Build application
 RUN npm run build
 
