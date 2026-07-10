@@ -54,6 +54,7 @@ export const ComposerCanvas: React.FC = () => {
 
   const { playChord, stopAll } = useChordPlayer();
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playingCardId, setPlayingCardId] = useState<number | null>(null);
   const playTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const sensors = useSensors(
@@ -316,6 +317,7 @@ export const ComposerCanvas: React.FC = () => {
     playTimeoutsRef.current = [];
     stopAll();
     setIsPlaying(false);
+    setPlayingCardId(null);
   }, [stopAll]);
 
   // Play the board's chords in order (reading order: row by row, left to right).
@@ -325,18 +327,25 @@ export const ComposerCanvas: React.FC = () => {
       if (Math.abs(a.positionY - b.positionY) > 40) return a.positionY - b.positionY;
       return a.positionX - b.positionX;
     });
-    const seq = ordered
-      .map((c) => getChordForCard(c)?.fretPositions)
-      .filter((p): p is ChordFretPosition[] => !!p && p.length > 0);
-    if (seq.length === 0) return;
+    const steps = ordered
+      .map((c) => ({ cardId: c.id, positions: getChordForCard(c)?.fretPositions }))
+      .filter((s): s is { cardId: number; positions: ChordFretPosition[] } =>
+        s.cardId != null && !!s.positions && s.positions.length > 0);
+    if (steps.length === 0) return;
 
     stopProgression();
     setIsPlaying(true);
     const msPerChord = 1000;
-    seq.forEach((positions, i) => {
-      playTimeoutsRef.current.push(setTimeout(() => playChord(positions), i * msPerChord));
+    steps.forEach((step, i) => {
+      playTimeoutsRef.current.push(setTimeout(() => {
+        playChord(step.positions);
+        setPlayingCardId(step.cardId);
+      }, i * msPerChord));
     });
-    playTimeoutsRef.current.push(setTimeout(() => setIsPlaying(false), seq.length * msPerChord + 400));
+    playTimeoutsRef.current.push(setTimeout(() => {
+      setIsPlaying(false);
+      setPlayingCardId(null);
+    }, steps.length * msPerChord + 400));
   };
 
   // Stop playback if the component unmounts (e.g. tab switch).
@@ -513,6 +522,7 @@ export const ComposerCanvas: React.FC = () => {
                     chord={chord}
                     position={{ x: card.positionX, y: card.positionY }}
                     isSelected={selectedCards.has(card.id!)}
+                    isPlaying={playingCardId === card.id}
                     scale={cardScale}
                     onClick={(e) => handleCardClick(card.id!, e)}
                     onContextMenu={(e) => handleContextMenu(card.id!, e)}

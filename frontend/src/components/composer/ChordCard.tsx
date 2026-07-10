@@ -9,6 +9,7 @@ interface ChordCardProps {
   chord: Chord;
   position: { x: number; y: number };
   isSelected?: boolean;
+  isPlaying?: boolean;
   scale?: number;
   onClick?: (e: React.MouseEvent) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
@@ -19,6 +20,7 @@ export const ChordCard: React.FC<ChordCardProps> = ({
   chord,
   position,
   isSelected = false,
+  isPlaying = false,
   scale = 1,
   onClick,
   onContextMenu,
@@ -53,7 +55,11 @@ export const ChordCard: React.FC<ChordCardProps> = ({
       style={style}
       className={`
         bg-white rounded-lg shadow-lg border-2 transition-all cursor-move
-        ${isSelected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-300'}
+        ${isPlaying
+          ? 'border-green-500 ring-4 ring-green-300 shadow-green-400/50'
+          : isSelected
+            ? 'border-blue-500 ring-2 ring-blue-300'
+            : 'border-gray-300'}
         ${isDragging ? 'opacity-50 scale-105' : 'hover:shadow-xl'}
       `}
       onClick={onClick}
