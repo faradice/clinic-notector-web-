@@ -29,39 +29,43 @@ export const useChordPlayer = () => {
 
   const playChord = useCallback(async (positions: ChordFretPosition[]) => {
     if (!synthRef.current) return;
-
-    // Ensure audio context is started
     await Tone.start();
 
-    // Convert fret positions to notes
-    const notes: string[] = [];
+    const notes = positionsToNotes(positions);
+    if (notes.length === 0) return;
 
-    for (let string = 1; string <= 6; string++) {
-      const position = positions.find(p => p.stringNumber === string);
-
-      if (position && position.fretNumber >= 0) {
-        const note = calculateNote(string, position.fretNumber);
-        notes.push(note);
-      }
-    }
-
-    if (notes.length > 0) {
-      // Play all notes simultaneously
-      synthRef.current.triggerAttackRelease(notes, '2n');
-    }
+    // Release any still-ringing chord first, then attack a hair later — otherwise
+    // overlapping (esp. shared) notes pile up and scramble on quick changes.
+    const now = Tone.now();
+    synthRef.current.releaseAll(now);
+    synthRef.current.triggerAttackRelease(notes, '2n', now + 0.02);
   }, []);
 
   const playNote = useCallback(async (stringNumber: number, fret: number) => {
     if (!synthRef.current) return;
-
     await Tone.start();
-
     const note = calculateNote(stringNumber, fret);
     synthRef.current.triggerAttackRelease([note], '8n');
   }, []);
 
-  return { playChord, playNote };
+  /** Cut any currently-ringing notes immediately. */
+  const stopAll = useCallback(() => {
+    synthRef.current?.releaseAll();
+  }, []);
+
+  return { playChord, playNote, stopAll };
 };
+
+function positionsToNotes(positions: ChordFretPosition[]): string[] {
+  const notes: string[] = [];
+  for (let string = 1; string <= 6; string++) {
+    const position = positions.find((p) => p.stringNumber === string);
+    if (position && position.fretNumber >= 0) {
+      notes.push(calculateNote(string, position.fretNumber));
+    }
+  }
+  return notes;
+}
 
 function calculateNote(stringNumber: number, fret: number): string {
   // Strings are numbered 1-6 (high E to low E)
