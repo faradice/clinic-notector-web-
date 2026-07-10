@@ -88,13 +88,22 @@ export const NotectorGame: React.FC = () => {
 
   const beatTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const matchedRef = useRef(false);
+  // Listen mode: how many consecutive frames the same letter has been detected.
+  // A plucked string holds its pitch; a stray transient (e.g. metronome bleed)
+  // flits, so we only accept a note once its letter has held for a couple frames.
+  const stableNoteRef = useRef<{ letter: string | null; count: number }>({ letter: null, count: 0 });
   // Refs mirror the latest state so the setTimeout-driven beat chain (which
   // closes over stale render values) always reads current data.
   const notesRef = useRef<NoteState[]>([]);
   const currentSequenceRef = useRef<string[]>([]);
 
   // Listen mode shares the tuner's detector (accurate, low-string capable).
-  const { reading, isListening } = useTuner(gameState === 'playing' && inputMode === 'listen');
+  // echoCancellation on: the browser subtracts our own metronome tick from the
+  // mic so it can't be mistaken for a played note.
+  const { reading, isListening } = useTuner(
+    gameState === 'playing' && inputMode === 'listen',
+    true,
+  );
   const detectedNote = reading.note ? `${reading.note}${reading.octave}` : null;
   const matchesNote = useCallback(
     (target: string) => {
@@ -323,12 +332,30 @@ export const NotectorGame: React.FC = () => {
     }
   }, []);
 
-  // Check for note matches
+  // Check for note matches (Listen mode). Runs every frame the reading updates so
+  // we can track how long a pitch has been held — hence `reading` in the deps,
+  // not the memoized `detectedNote` string (which wouldn't re-fire while stable).
   useEffect(() => {
-    if (gameState !== 'playing' || !detectedNote || matchedRef.current) return;
+    if (gameState !== 'playing' || inputMode !== 'listen') return;
 
+    // Track pitch stability across frames.
+    const letter = reading.note;
+    const stable = stableNoteRef.current;
+    if (!letter) {
+      stable.letter = null;
+      stable.count = 0;
+      return;
+    }
+    if (stable.letter === letter) stable.count++;
+    else { stable.letter = letter; stable.count = 1; }
+
+    if (matchedRef.current) return;
     const currentNote = notes[currentNoteIndex];
     if (!currentNote || currentNote.status !== 'active') return;
+
+    // Require the pitch to have held for 2+ frames before it counts — rejects
+    // the metronome tick's transient, which never sustains a single letter.
+    if (stable.count < 2) return;
 
     if (matchesNote(currentNote.note)) {
       // Correct note!
@@ -338,7 +365,7 @@ export const NotectorGame: React.FC = () => {
         i === currentNoteIndex ? { ...n, status: 'correct' } : n
       ));
     }
-  }, [detectedNote, gameState, notes, currentNoteIndex, matchesNote]);
+  }, [reading, gameState, inputMode, notes, currentNoteIndex, matchesNote]);
 
   // PICK mode: answer the active note by typing its letter name (case-insensitive).
   // Wrong letters are ignored — the beat timer still decides a miss, same as Listen mode.

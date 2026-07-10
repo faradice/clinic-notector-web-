@@ -70,7 +70,7 @@ export function nearestGuitarString(reading: TunerReading): GuitarString | null 
  * (ACF2+ with parabolic interpolation) for accurate, low-jitter readings across
  * the guitar range (low E ~82 Hz up).
  */
-export const useTuner = (enabled: boolean) => {
+export const useTuner = (enabled: boolean, echoCancellation = false) => {
   const [reading, setReading] = useState<TunerReading>(EMPTY);
   const [isListening, setIsListening] = useState(false);
 
@@ -85,8 +85,12 @@ export const useTuner = (enabled: boolean) => {
 
   const start = useCallback(async () => {
     try {
+      // The standalone tuner wants the raw signal (echoCancellation off) for cent
+      // accuracy. The Notector game turns it ON so the browser cancels its own
+      // metronome tick out of the mic — otherwise the tick bleeds in and reads as
+      // a played note, auto-passing every note while the metronome is running.
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+        audio: { echoCancellation, noiseSuppression: false, autoGainControl: false },
       });
       micStreamRef.current = stream;
 
@@ -104,7 +108,7 @@ export const useTuner = (enabled: boolean) => {
       console.error('Tuner: microphone access failed', err);
       alert('Microphone access denied. Please allow microphone access to tune.');
     }
-  }, []);
+  }, [echoCancellation]);
 
   const stop = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
