@@ -12,6 +12,7 @@ const STANDARD_TUNING = ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'];
 // and the two overlapping voices scrambled. One shared synth makes each new
 // strum silence whatever came before, regardless of which card triggered it.
 let sharedSynth: Tone.PolySynth | null = null;
+let limiter: Tone.Limiter | null = null;
 
 function getSynth(): Tone.PolySynth {
   if (!sharedSynth) {
@@ -28,7 +29,13 @@ function getSynth(): Tone.PolySynth {
         // the next chord on transitions. A guitar-ish decay also just fits.
         release: 0.35,
       },
-    }).toDestination();
+    });
+    // Six triangle voices (open G uses all six strings) summed at full gain
+    // overshoot 0 dBFS and clip — an audible buzz even on a single strum. Give
+    // headroom, then a soft limiter catches any remaining peaks transparently.
+    sharedSynth.volume.value = -9;
+    limiter = new Tone.Limiter(-1).toDestination();
+    sharedSynth.connect(limiter);
   }
   return sharedSynth;
 }
