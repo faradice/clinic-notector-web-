@@ -23,7 +23,10 @@ function getSynth(): Tone.PolySynth {
         attack: 0.005,
         decay: 0.1,
         sustain: 0.3,
-        release: 1,
+        // Short release so a released chord's tail dies quickly. A long tail
+        // (esp. dense 6-note chords like open G) lingered ~1s and beat against
+        // the next chord on transitions. A guitar-ish decay also just fits.
+        release: 0.35,
       },
     }).toDestination();
   }
