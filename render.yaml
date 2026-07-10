@@ -1,0 +1,58 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# Deploys three things from this repo:
+#   1. toneyra-db   — managed PostgreSQL
+#   2. toneyra-api  — Spring Boot backend (Docker), runs Flyway migrations on start
+#   3. toneyra-web  — Vite frontend, built and served as a static site
+# Step-by-step in DEPLOY_RENDER.md.
+
+databases:
+  - name: toneyra-db
+    databaseName: clinic_notector
+    user: clinic_user
+    plan: free            # NOTE: Render's free Postgres is time-limited — use a paid plan for a real pilot
+    region: frankfurt     # closest region to Iceland / the Nordics
+
+services:
+  # --- Backend: Spring Boot (Docker) ---
+  - type: web
+    name: toneyra-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    region: frankfurt
+    plan: free            # NOTE: free web services cold-start after ~15 min idle — paid plan for the pilot
+    healthCheckPath: /api/actuator/health
+    envVars:
+      - key: DB_HOST
+        fromDatabase: { name: toneyra-db, property: host }
+      - key: DB_PORT
+        fromDatabase: { name: toneyra-db, property: port }
+      - key: DB_NAME
+        fromDatabase: { name: toneyra-db, property: database }
+      - key: DB_USER
+        fromDatabase: { name: toneyra-db, property: user }
+      - key: DB_PASSWORD
+        fromDatabase: { name: toneyra-db, property: password }
+      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
+        value: validate
+      # The frontend's origin, for CORS. If Render gives toneyra-web a different
+      # URL, update this to match (backend → Environment) and redeploy.
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://toneyra-web.onrender.com
+
+  # --- Frontend: Vite build, served as a static site ---
+  - type: web
+    name: toneyra-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      # The backend base URL + /api. If Render gives toneyra-api a different URL,
+      # update this (frontend → Environment) and redeploy so the SPA calls the right host.
+      - key: VITE_API_BASE_URL
+        value: https://toneyra-api.onrender.com/api
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
