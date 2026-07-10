@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useChordDetector, NOTE_NAMES } from '../../hooks/useChordDetector';
 import { ChordDiagram } from './ChordDiagram';
 import { shapeFor } from './chordShapes';
+import { chordFromName } from '../composer/chordFromName';
+import { chordApi, type Chord } from '../../api/chords';
 
 export const ChordDetector: React.FC = () => {
   const [active, setActive] = useState(false);
+  const [addStatus, setAddStatus] = useState<string | null>(null);
   const { reading, isListening } = useChordDetector(active);
 
   // Show the current chord, or hold the last detected one when the sound stops.
@@ -13,6 +16,25 @@ export const ChordDetector: React.FC = () => {
   const chordTones = new Set(chord ? chord.intervals.map((iv) => (chord.root + iv) % 12) : []);
   const confident = chord != null && chord.score >= 0.6;
   const shape = confident ? shapeFor(chord!.name) : null;
+
+  // Clear the add-status whenever the detected chord changes.
+  useEffect(() => setAddStatus(null), [chord?.name]);
+
+  // Add the detected chord to the Composer's chord library (needs a known shape).
+  const handleAddToLibrary = async () => {
+    if (!chord) return;
+    const gen = chordFromName(chord.name);
+    if (!gen) { setAddStatus('No shape to save for this chord'); return; }
+    try {
+      const existing = await chordApi.getByName(chord.name).catch(() => null);
+      if (existing) { setAddStatus(`${chord.name} is already in the library`); return; }
+      await chordApi.create(gen as Chord);
+      setAddStatus(`Added ${chord.name} to the library ✓`);
+    } catch (e) {
+      console.error('Failed to add chord to library', e);
+      setAddStatus('Failed to add');
+    }
+  };
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-slate-900 text-slate-100 p-6">
@@ -53,6 +75,12 @@ export const ChordDetector: React.FC = () => {
           <>
             <ChordDiagram frets={shape} />
             <span className="mt-1 text-xs text-slate-500">a common shape for {chord!.name}</span>
+            <button
+              onClick={handleAddToLibrary}
+              className="mt-2 px-3 py-1.5 rounded-md bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold"
+            >
+              ＋ Add {chord!.name} to library
+            </button>
           </>
         ) : (
           <span className="text-xs text-slate-600">
@@ -60,6 +88,7 @@ export const ChordDetector: React.FC = () => {
           </span>
         )}
       </div>
+      <div className="h-5 mb-3 text-sm text-slate-400">{addStatus}</div>
 
       {/* Chroma bars — energy per pitch class, chord tones highlighted */}
       <div className="flex items-end gap-2 h-40 mb-8">
