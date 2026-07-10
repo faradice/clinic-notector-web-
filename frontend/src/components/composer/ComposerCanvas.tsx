@@ -56,7 +56,11 @@ export const ComposerCanvas: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playingCardId, setPlayingCardId] = useState<number | null>(null);
   const [playBpm, setPlayBpm] = useState(90); // playback tempo, one chord per beat
+  const [loop, setLoop] = useState(false);
+  const loopRef = useRef(false);
   const playTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => { loopRef.current = loop; }, [loop]);
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } })
@@ -337,16 +341,25 @@ export const ComposerCanvas: React.FC = () => {
     stopProgression();
     setIsPlaying(true);
     const msPerChord = Math.round(60000 / playBpm); // one chord per beat
-    steps.forEach((step, i) => {
+
+    const schedulePass = () => {
+      steps.forEach((step, i) => {
+        playTimeoutsRef.current.push(setTimeout(() => {
+          playChord(step.positions);
+          setPlayingCardId(step.cardId);
+        }, i * msPerChord));
+      });
+      // At the end of the pass, loop or finish (loopRef so toggling mid-play works).
       playTimeoutsRef.current.push(setTimeout(() => {
-        playChord(step.positions);
-        setPlayingCardId(step.cardId);
-      }, i * msPerChord));
-    });
-    playTimeoutsRef.current.push(setTimeout(() => {
-      setIsPlaying(false);
-      setPlayingCardId(null);
-    }, steps.length * msPerChord + 400));
+        if (loopRef.current) {
+          schedulePass();
+        } else {
+          setIsPlaying(false);
+          setPlayingCardId(null);
+        }
+      }, steps.length * msPerChord));
+    };
+    schedulePass();
   };
 
   // Stop playback if the component unmounts (e.g. tab switch).
@@ -476,6 +489,16 @@ export const ComposerCanvas: React.FC = () => {
               />
               <span className="text-xs text-gray-500">bpm</span>
             </div>
+
+            <button
+              onClick={() => setLoop((l) => !l)}
+              className={`px-3 py-2 rounded-lg text-sm font-semibold border transition-colors ${
+                loop ? 'bg-indigo-500 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
+              title="Loop the progression"
+            >
+              🔁 Loop
+            </button>
 
             <button
               onClick={handleCreateWorkspace}
