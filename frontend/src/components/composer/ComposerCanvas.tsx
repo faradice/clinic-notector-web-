@@ -47,6 +47,7 @@ export const ComposerCanvas: React.FC = () => {
   const [cardScale, setCardScale] = useState(0.7); // canvas card zoom
   const [keyIdx, setKeyIdx] = useState(0);
   const [progIdx, setProgIdx] = useState(0);
+  const [bars, setBars] = useState(4);
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -248,20 +249,28 @@ export const ComposerCanvas: React.FC = () => {
   // Progressions available for the selected key's mode.
   const progOptions = useMemo(() => progressionsForMode(KEYS[keyIdx].mode), [keyIdx]);
 
+  // Default the bar count to the selected progression's length.
+  useEffect(() => {
+    const prog = progOptions[progIdx];
+    if (prog) setBars(prog.degrees.length);
+  }, [progOptions, progIdx]);
+
   const handleGenerateBoard = async () => {
     const key = KEYS[keyIdx];
     const prog = progOptions[progIdx] ?? progOptions[0];
     const names = chordsFor(key, prog.degrees);
+    if (names.length === 0) return;
+    // One chord per bar, cycling the progression to fill the requested bars.
+    const barNames = Array.from({ length: bars }, (_, i) => names[i % names.length]);
     try {
       setLoading(true);
-      // Ensure each chord exists in the library (create the missing ones).
+      // Ensure each unique chord exists in the library (self-heal legacy voicings).
       let library = chordLibrary;
-      const chords: Chord[] = [];
-      for (const name of names) {
+      const byName = new Map<string, Chord>();
+      for (const name of Array.from(new Set(barNames))) {
         const gen = chordFromName(name);
         let chord = library.find((c) => c.name === name);
         if (chord && gen && !samePositions(chord.fretPositions, gen.fretPositions)) {
-          // Existing entry has a non-canonical (e.g. legacy) voicing — correct it.
           chord = await chordApi.update(chord.id!, { ...chord, ...gen });
           library = library.map((c) => (c.id === chord!.id ? chord! : c));
         } else if (!chord) {
@@ -269,16 +278,22 @@ export const ComposerCanvas: React.FC = () => {
           chord = await chordApi.create(gen as Chord);
           library = [...library, chord];
         }
-        chords.push(chord);
+        byName.set(name, chord);
       }
       setChordLibrary(library);
-      // Create a new workspace and lay the chords out in a row.
-      let ws = await workspaceApi.create({ name: `${key.label} · ${prog.label}`, cards: [] });
-      for (let i = 0; i < chords.length; i++) {
+      // New workspace; lay one chord per bar, 4 bars per row.
+      const perRow = 4;
+      let ws = await workspaceApi.create({
+        name: `${key.label} · ${prog.label} · ${bars} bars`,
+        cards: [],
+      });
+      for (let i = 0; i < barNames.length; i++) {
+        const chord = byName.get(barNames[i]);
+        if (!chord) continue;
         ws = await workspaceApi.addCard(ws.id!, {
-          chordId: chords[i].id!,
-          positionX: 40 + i * 230,
-          positionY: 60,
+          chordId: chord.id!,
+          positionX: 40 + (i % perRow) * 230,
+          positionY: 40 + Math.floor(i / perRow) * 290,
         });
       }
       setWorkspaces((prev) => [...prev, ws]);
@@ -345,6 +360,18 @@ export const ComposerCanvas: React.FC = () => {
                 <option key={p.label} value={i}>{p.label}</option>
               ))}
             </select>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600">Bars:</label>
+              <input
+                type="number"
+                min={1}
+                max={32}
+                value={bars}
+                onChange={(e) => setBars(Math.max(1, Math.min(32, parseInt(e.target.value) || 1)))}
+                className="w-20 px-2 py-1.5 border border-gray-300 rounded text-sm"
+                title="Number of bars — the progression repeats to fill them"
+              />
+            </div>
             <button
               onClick={handleGenerateBoard}
               disabled={loading}
