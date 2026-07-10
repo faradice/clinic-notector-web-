@@ -55,6 +55,7 @@ export const ComposerCanvas: React.FC = () => {
   const { playChord, stopAll } = useChordPlayer();
   const [isPlaying, setIsPlaying] = useState(false);
   const [playingCardId, setPlayingCardId] = useState<number | null>(null);
+  const [playBpm, setPlayBpm] = useState(90); // playback tempo, one chord per beat
   const playTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const sensors = useSensors(
@@ -335,7 +336,7 @@ export const ComposerCanvas: React.FC = () => {
 
     stopProgression();
     setIsPlaying(true);
-    const msPerChord = 1000;
+    const msPerChord = Math.round(60000 / playBpm); // one chord per beat
     steps.forEach((step, i) => {
       playTimeoutsRef.current.push(setTimeout(() => {
         playChord(step.positions);
@@ -461,6 +462,20 @@ export const ComposerCanvas: React.FC = () => {
             >
               {isPlaying ? '■ Stop' : '▶ Play'}
             </button>
+
+            <div className="flex items-center gap-1">
+              <label className="text-sm text-gray-600">Tempo</label>
+              <input
+                type="number"
+                min={40}
+                max={200}
+                value={playBpm}
+                onChange={(e) => setPlayBpm(Math.max(40, Math.min(200, parseInt(e.target.value) || 90)))}
+                className="w-16 px-2 py-1.5 border border-gray-300 rounded text-sm"
+                title="Playback tempo (BPM — one chord per beat)"
+              />
+              <span className="text-xs text-gray-500">bpm</span>
+            </div>
 
             <button
               onClick={handleCreateWorkspace}
