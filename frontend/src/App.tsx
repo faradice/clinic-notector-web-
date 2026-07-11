@@ -4,8 +4,11 @@ import { ComposerCanvas } from './components/composer/ComposerCanvas';
 import { NotectorGame } from './components/notector/NotectorGame';
 import { GuitarTuner } from './components/tuner/GuitarTuner';
 import { ChordDetector } from './components/chord-detector/ChordDetector';
+import { Onboarding } from './components/Onboarding';
 
 const queryClient = new QueryClient();
+
+const ONBOARDED_KEY = 'toneyra_onboarded';
 
 
 const TABS = [
@@ -19,9 +22,23 @@ type TabId = (typeof TABS)[number]['id'];
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabId>('composer');
+  // First-visit welcome overlay; shown once, remembered in localStorage.
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    try { return !localStorage.getItem(ONBOARDED_KEY); } catch { return false; }
+  });
+  const dismissOnboarding = () => {
+    try { localStorage.setItem(ONBOARDED_KEY, '1'); } catch { /* ignore */ }
+    setShowOnboarding(false);
+  };
 
   return (
     <QueryClientProvider client={queryClient}>
+      {showOnboarding && (
+        <Onboarding
+          onStart={dismissOnboarding}
+          onPick={(tab) => { setActiveTab(tab); dismissOnboarding(); }}
+        />
+      )}
       <div className="min-h-screen bg-gray-50">
         <header className="bg-white shadow-sm border-b">
           <div className="px-6">

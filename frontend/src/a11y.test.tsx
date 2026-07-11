@@ -5,6 +5,7 @@ import { NotectorGame } from './components/notector/NotectorGame';
 import { GuitarTuner } from './components/tuner/GuitarTuner';
 import { ChordDetector } from './components/chord-detector/ChordDetector';
 import { ComposerCanvas } from './components/composer/ComposerCanvas';
+import { Onboarding } from './components/Onboarding';
 
 // Assert no axe violations without the custom matcher (whose types don't flow
 // through tsc -b): compare a readable list of "rule: selector" to an empty array.
@@ -97,6 +98,11 @@ describe('accessibility (axe) — no violations on the main views', () => {
   it('Composer (empty state)', async () => {
     const { container } = render(<ComposerCanvas />);
     await screen.findByText('Engir hljómar í safninu'); // wait for the mount fetch to settle
+    await expectNoAxeViolations(container);
+  });
+
+  it('Onboarding overlay', async () => {
+    const { container } = render(<Onboarding onStart={() => {}} onPick={() => {}} />);
     await expectNoAxeViolations(container);
   });
 });
