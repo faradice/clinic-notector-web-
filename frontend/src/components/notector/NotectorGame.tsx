@@ -432,6 +432,7 @@ export const NotectorGame: React.FC = () => {
             value={level}
             onChange={(e) => setLevel(e.target.value as DifficultyLevel)}
             disabled={gameState === 'playing'}
+            aria-label="Erfiðleikastig"
             className="px-4 py-2 border border-gray-300 rounded-lg text-base font-semibold"
           >
             {Object.entries(LEVELS).map(([key, config]) => (
@@ -479,6 +480,7 @@ export const NotectorGame: React.FC = () => {
             min="15"
             max="180"
             disabled={gameState === 'playing'}
+            aria-label="Hraði — slög á mínútu"
             className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-lg font-semibold"
           />
           <span className="text-xs text-gray-500">slög/nótur á mín</span>
