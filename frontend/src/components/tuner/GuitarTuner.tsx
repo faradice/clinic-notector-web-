@@ -119,7 +119,7 @@ export const GuitarTuner: React.FC = () => {
       )}
 
       {/* String chips — tap to hear the reference pitch */}
-      <p className="text-slate-500 text-xs mb-2">Smelltu á streng til að heyra hann</p>
+      <p className="text-slate-400 text-xs mb-2">Smelltu á streng til að heyra hann</p>
       <div className="flex gap-2 sm:gap-3 mb-8">
         {GUITAR_STRINGS.map((s) => {
           const isPlaying = playing === s.label;

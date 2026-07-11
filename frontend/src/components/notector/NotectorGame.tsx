@@ -832,7 +832,7 @@ export const NotectorGame: React.FC = () => {
                       y={64}
                       textAnchor="middle"
                       fontSize="16"
-                      fill="#94a3b8"
+                      fill="#475569"
                     >
                       Taktur {index + 1}
                     </text>

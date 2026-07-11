@@ -57,7 +57,7 @@ export const ChordDetector: React.FC = () => {
         <div className="h-6 mt-2 text-lg text-slate-300 font-mono">
           {chord ? chord.notes.join(' · ') : ''}
         </div>
-        <div className="h-5 mt-1 text-sm text-slate-500">
+        <div className="h-5 mt-1 text-sm text-slate-400">
           {!isListening
             ? ''
             : !chord
@@ -75,7 +75,7 @@ export const ChordDetector: React.FC = () => {
         {shape ? (
           <>
             <div aria-hidden="true"><ChordDiagram frets={shape} /></div>
-            <span className="mt-1 text-xs text-slate-500">algengt grip fyrir {chord!.name}</span>
+            <span className="mt-1 text-xs text-slate-400">algengt grip fyrir {chord!.name}</span>
             <button
               onClick={handleAddToLibrary}
               className="mt-2 px-3 py-1.5 rounded-md bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold"
@@ -84,7 +84,7 @@ export const ChordDetector: React.FC = () => {
             </button>
           </>
         ) : (
-          <span className="text-xs text-slate-600">
+          <span className="text-xs text-slate-400">
             {confident ? 'ekkert grip til fyrir þennan hljóm' : ''}
           </span>
         )}
@@ -103,7 +103,7 @@ export const ChordDetector: React.FC = () => {
                 className={`w-5 rounded-t transition-all ${isTone ? 'bg-green-500' : 'bg-slate-600'}`}
                 style={{ height: `${Math.max(2, h)}px` }}
               />
-              <span className={`mt-1 text-xs ${isTone ? 'text-green-400 font-bold' : 'text-slate-500'}`}>
+              <span className={`mt-1 text-xs ${isTone ? 'text-green-400 font-bold' : 'text-slate-400'}`}>
                 {name}
               </span>
             </div>
@@ -122,7 +122,7 @@ export const ChordDetector: React.FC = () => {
         <span aria-hidden="true">{active ? '■ Stöðva' : '🎤 Byrja að hlusta'}</span>
       </button>
 
-      <p className="text-slate-500 text-xs mt-6 max-w-md text-center">
+      <p className="text-slate-400 text-xs mt-6 max-w-md text-center">
         Frumgerð: þekkir heiti hljómsins út frá nótunum sem heyrast (dúr, moll, sus, dim, aug, 7-undir).
         Virkar best á skýrt slegnum hljómi sem er haldið — það getur ekki lesið nákvæmt gripið þitt.
       </p>
