@@ -50,9 +50,10 @@ export const GuitarTuner: React.FC = () => {
       {/* Meter show/hide toggle */}
       <button
         onClick={() => setShowMeter((v) => !v)}
+        aria-pressed={showMeter}
         className="mb-4 px-4 py-1.5 rounded-full text-sm font-semibold border border-slate-600 bg-slate-800 hover:bg-slate-700"
       >
-        {showMeter ? '🙈 Fela mæli (stilla eftir eyra)' : '📊 Sýna mæli'}
+        <span aria-hidden="true">{showMeter ? '🙈' : '📊'}</span> {showMeter ? 'Fela mæli (stilla eftir eyra)' : 'Sýna mæli'}
       </button>
 
       {showMeter ? (
@@ -68,8 +69,8 @@ export const GuitarTuner: React.FC = () => {
             </div>
           </div>
 
-          {/* Needle dial */}
-          <svg viewBox="0 0 300 180" className="w-full max-w-md mt-2">
+          {/* Needle dial — visual; the status text below states the action in words. */}
+          <svg viewBox="0 0 300 180" className="w-full max-w-md mt-2" aria-hidden="true">
             <path d="M 30 150 A 120 120 0 0 1 270 150" fill="none" stroke="#334155" strokeWidth={4} />
             <path
               d={arcBetweenCents(-IN_TUNE_CENTS, IN_TUNE_CENTS)}
@@ -92,7 +93,7 @@ export const GuitarTuner: React.FC = () => {
             </g>
           </svg>
 
-          <div className="h-8 mb-3 text-lg font-semibold" style={{ color: accent }}>
+          <div className="h-8 mb-3 text-lg font-semibold" style={{ color: accent }} role="status" aria-live="polite">
             {!isListening ? '' : !hasPitch ? 'Spilaðu streng…' : inTune ? '✓ Rétt stillt' : cents < 0 ? 'Hækka ↑' : 'Lækka ↓'}
           </div>
           <div className="text-slate-400 font-mono text-sm mb-4 h-5">
@@ -102,11 +103,13 @@ export const GuitarTuner: React.FC = () => {
           {/* Mic control */}
           <button
             onClick={() => setActive((a) => !a)}
+            aria-pressed={active}
+            aria-label={active ? 'Slökkva á hljóðnema' : 'Kveikja á hljóðnema'}
             className={`mb-6 px-8 py-3 rounded-lg text-lg font-semibold transition-colors ${
               active ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'
             }`}
           >
-            {active ? '■ Slökkva á hljóðnema' : '🎤 Kveikja á hljóðnema'}
+            <span aria-hidden="true">{active ? '■ Slökkva á hljóðnema' : '🎤 Kveikja á hljóðnema'}</span>
           </button>
         </>
       ) : (
@@ -135,9 +138,9 @@ export const GuitarTuner: React.FC = () => {
               onClick={() => playReference(s)}
               className={`w-14 h-14 rounded-full flex items-center justify-center font-bold border-2 transition-all ${cls}`}
               title={`Spila ${s.label} (${s.frequency.toFixed(2)} Hz)`}
+              aria-label={`Spila viðmiðunartón ${s.label}`}
             >
-              {s.note}
-              <span className="text-xs align-super text-slate-400">{s.octave}</span>
+              <span aria-hidden="true">{s.note}<span className="text-xs align-super text-slate-400">{s.octave}</span></span>
             </button>
           );
         })}

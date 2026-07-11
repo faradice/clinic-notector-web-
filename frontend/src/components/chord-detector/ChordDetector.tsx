@@ -41,8 +41,9 @@ export const ChordDetector: React.FC = () => {
       <h2 className="text-2xl font-bold mt-2 mb-1">Hljómagreinir</h2>
       <p className="text-slate-400 mb-6 text-sm">Sláðu hljóm og haltu honum · á tilraunastigi</p>
 
-      {/* Detected chord */}
-      <div className="flex flex-col items-center mb-6">
+      {/* Detected chord — announced to screen readers as it changes */}
+      <div className="flex flex-col items-center mb-6" role="status" aria-live="polite"
+           aria-label={chord ? `Greindur hljómur: ${chord.name}${confident ? '' : ' (óviss)'}` : 'Enginn hljómur greindur'}>
         <div
           className="font-bold leading-none transition-opacity"
           style={{
@@ -73,7 +74,7 @@ export const ChordDetector: React.FC = () => {
       <div className="h-52 mb-4 flex flex-col items-center justify-center">
         {shape ? (
           <>
-            <ChordDiagram frets={shape} />
+            <div aria-hidden="true"><ChordDiagram frets={shape} /></div>
             <span className="mt-1 text-xs text-slate-500">algengt grip fyrir {chord!.name}</span>
             <button
               onClick={handleAddToLibrary}
@@ -90,8 +91,9 @@ export const ChordDetector: React.FC = () => {
       </div>
       <div className="h-5 mb-3 text-sm text-slate-400">{addStatus}</div>
 
-      {/* Chroma bars — energy per pitch class, chord tones highlighted */}
-      <div className="flex items-end gap-2 h-40 mb-8">
+      {/* Chroma bars — a visual aid (chord tones bold + green); the chord name and
+          notes above carry the same information for screen readers, so hide this. */}
+      <div className="flex items-end gap-2 h-40 mb-8" aria-hidden="true">
         {NOTE_NAMES.map((name, i) => {
           const h = Math.round(reading.chroma[i] * 140);
           const isTone = chordTones.has(i);
@@ -111,11 +113,13 @@ export const ChordDetector: React.FC = () => {
 
       <button
         onClick={() => setActive((a) => !a)}
+        aria-pressed={active}
+        aria-label={active ? 'Stöðva hlustun' : 'Byrja að hlusta á hljóðnema'}
         className={`px-8 py-3 rounded-lg text-lg font-semibold transition-colors ${
           active ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'
         }`}
       >
-        {active ? '■ Stöðva' : '🎤 Byrja að hlusta'}
+        <span aria-hidden="true">{active ? '■ Stöðva' : '🎤 Byrja að hlusta'}</span>
       </button>
 
       <p className="text-slate-500 text-xs mt-6 max-w-md text-center">
