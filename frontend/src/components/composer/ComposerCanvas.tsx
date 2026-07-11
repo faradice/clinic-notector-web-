@@ -411,6 +411,7 @@ export const ComposerCanvas: React.FC = () => {
             <select
               value={keyIdx}
               onChange={(e) => { setKeyIdx(parseInt(e.target.value)); setProgIdx(0); }}
+              aria-label="Tóntegund"
               className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
             >
               {KEYS.map((k, i) => (
@@ -420,6 +421,7 @@ export const ComposerCanvas: React.FC = () => {
             <select
               value={progIdx}
               onChange={(e) => setProgIdx(parseInt(e.target.value))}
+              aria-label="Framvinda"
               className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
             >
               {progOptions.map((p, i) => (
@@ -436,6 +438,7 @@ export const ComposerCanvas: React.FC = () => {
                 onChange={(e) => setBars(Math.max(1, Math.min(32, parseInt(e.target.value) || 1)))}
                 className="w-20 px-2 py-1.5 border border-gray-300 rounded text-sm"
                 title="Fjöldi takta — framvindan endurtekur sig til að fylla þá"
+                aria-label="Fjöldi takta"
               />
             </div>
             <button
@@ -464,6 +467,7 @@ export const ComposerCanvas: React.FC = () => {
             <select
               value={currentWorkspace?.id || ''}
               onChange={(e) => setCurrentWorkspace(workspaces.find((w) => w.id === parseInt(e.target.value)) || null)}
+              aria-label="Vinnusvæði"
               className="px-4 py-2 border border-gray-300 rounded-lg"
             >
               <option value="">Veldu vinnusvæði</option>
@@ -493,6 +497,7 @@ export const ComposerCanvas: React.FC = () => {
                 onChange={(e) => setPlayBpm(Math.max(40, Math.min(200, parseInt(e.target.value) || 90)))}
                 className="w-16 px-2 py-1.5 border border-gray-300 rounded text-sm"
                 title="Spilunarhraði (bpm — einn hljómur á slag)"
+                aria-label="Spilunarhraði"
               />
               <span className="text-xs text-gray-500">bpm</span>
             </div>

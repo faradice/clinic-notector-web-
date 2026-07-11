@@ -4,6 +4,7 @@ import { axe } from 'vitest-axe';
 import { NotectorGame } from './components/notector/NotectorGame';
 import { GuitarTuner } from './components/tuner/GuitarTuner';
 import { ChordDetector } from './components/chord-detector/ChordDetector';
+import { ComposerCanvas } from './components/composer/ComposerCanvas';
 
 // Assert no axe violations without the custom matcher (whose types don't flow
 // through tsc -b): compare a readable list of "rule: selector" to an empty array.
@@ -35,6 +36,31 @@ vi.mock('./hooks/useChordDetector', async (importActual) => ({
 vi.mock('./api/customBars', () => ({
   customBarApi: { getAll: () => Promise.resolve([]), create: (b: unknown) => Promise.resolve(b), delete: () => Promise.resolve() },
 }));
+// Composer: stub the data layer + audio so it renders its empty state purely.
+vi.mock('./api/chords', async (importActual) => ({
+  ...(await importActual<typeof import('./api/chords')>()),
+  chordApi: {
+    getAll: () => Promise.resolve([]),
+    create: (c: unknown) => Promise.resolve(c),
+    update: (_id: number, c: unknown) => Promise.resolve(c),
+    getByName: () => Promise.resolve(null),
+  },
+}));
+vi.mock('./api/workspaces', async (importActual) => ({
+  ...(await importActual<typeof import('./api/workspaces')>()),
+  workspaceApi: {
+    getAll: () => Promise.resolve([]),
+    create: (w: unknown) => Promise.resolve(w),
+    delete: () => Promise.resolve(),
+    addCard: (_id: number, c: unknown) => Promise.resolve(c),
+    removeCard: () => Promise.resolve({}),
+    updateCardPositions: () => Promise.resolve({}),
+    updateCardPosition: () => Promise.resolve({}),
+  },
+}));
+vi.mock('./hooks/useChordPlayer', () => ({
+  useChordPlayer: () => ({ playChord: () => {}, playNote: () => {}, stopAll: () => {} }),
+}));
 
 // axe can't compute colour contrast in jsdom (no layout) — we audit that
 // separately by measured ratio. Turn the rule off so it doesn't warn.
@@ -59,6 +85,12 @@ describe('accessibility (axe) — no violations on the main views', () => {
 
   it('Chord Detector', async () => {
     const { container } = render(<ChordDetector />);
+    await expectNoAxeViolations(container);
+  });
+
+  it('Composer (empty state)', async () => {
+    const { container } = render(<ComposerCanvas />);
+    await screen.findByText('Engir hljómar í safninu'); // wait for the mount fetch to settle
     await expectNoAxeViolations(container);
   });
 });
