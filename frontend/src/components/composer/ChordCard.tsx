@@ -74,12 +74,14 @@ export const ChordCard: React.FC<ChordCardProps> = ({
             onClick={handlePlayChord}
             className="p-2 hover:bg-green-100 rounded-full transition-colors"
             title="Spila hljóm"
+            aria-label={`Spila hljóminn ${chord.name}`}
           >
             <svg
               className="w-8 h-8 text-green-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"

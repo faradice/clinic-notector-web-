@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import { DndContext, DragOverlay, MouseSensor, useSensor, useSensors, useDraggable } from '@dnd-kit/core';
+import { DndContext, DragOverlay, MouseSensor, TouchSensor, KeyboardSensor, useSensor, useSensors, useDraggable } from '@dnd-kit/core';
 import type { Chord, ChordFretPosition } from '../../api/chords';
 import { chordApi } from '../../api/chords';
 import type { Workspace, WorkspaceCard, CardPositionUpdate } from '../../api/workspaces';
@@ -63,7 +63,11 @@ export const ComposerCanvas: React.FC = () => {
   useEffect(() => { loopRef.current = loop; }, [loop]);
 
   const sensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { distance: 8 } })
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    // Touch: press-and-hold briefly to drag so a normal swipe still scrolls (iPad/phone).
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+    // Keyboard: focus a card, Space to pick up, arrows to move, Space to drop (WCAG 2.1.1).
+    useSensor(KeyboardSensor),
   );
 
   useEffect(() => {
@@ -535,6 +539,7 @@ export const ComposerCanvas: React.FC = () => {
                   onChange={(e) => setCardScale(parseFloat(e.target.value))}
                   className="w-28 accent-blue-500"
                   title="Stærð spjalda"
+                  aria-label="Aðdráttur spjalda"
                 />
                 <span className="text-xs text-gray-500 w-9">{Math.round(cardScale * 100)}%</span>
               </div>
