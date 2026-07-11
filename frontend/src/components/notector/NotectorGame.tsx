@@ -498,9 +498,11 @@ export const NotectorGame: React.FC = () => {
               }
             }}
             title={tickVolume > 0 ? 'Þagga taktslátt' : 'Kveikja á taktslætti'}
+            aria-label={tickVolume > 0 ? 'Þagga taktslátt' : 'Kveikja á taktslætti'}
+            aria-pressed={tickVolume === 0}
             className="px-2 py-1.5 text-xl rounded-lg border border-gray-300 hover:bg-gray-50"
           >
-            {tickVolume > 0 ? '🔊' : '🔇'}
+            <span aria-hidden="true">{tickVolume > 0 ? '🔊' : '🔇'}</span>
           </button>
           <input
             type="range"
@@ -513,7 +515,8 @@ export const NotectorGame: React.FC = () => {
               setTickVolume(v);
               if (v > 0) lastTickVolumeRef.current = v;
             }}
-            title="Metronome tick volume"
+            title="Hljóðstyrkur taktsláttar"
+            aria-label="Hljóðstyrkur taktsláttar"
             className="w-24 accent-blue-500"
           />
         </div>
@@ -532,7 +535,7 @@ export const NotectorGame: React.FC = () => {
           🔤 Nöfn: {showNoteNames ? 'Á' : 'Af'}
         </button>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4" role="status" aria-live="polite">
           <div className="text-sm">
             <span className="font-semibold text-gray-700">Umferð:</span>
             <span className="ml-2 text-lg font-bold text-blue-600">{roundNumber}</span>
@@ -633,7 +636,7 @@ export const NotectorGame: React.FC = () => {
                         <button onClick={() => selectBarSource(bar.id!)} className="px-3 py-2 text-sm font-semibold">
                           {bar.name} <span className="opacity-70">({bar.notes.map((n) => n.replace(/[0-9]/g, '')).join(' ')})</span>
                         </button>
-                        <button onClick={() => deleteBar(bar.id!)} title="Eyða takti" className="px-2 py-2 text-sm hover:text-red-500">🗑</button>
+                        <button onClick={() => deleteBar(bar.id!)} title="Eyða takti" aria-label={`Eyða takti ${bar.name}`} className="px-2 py-2 text-sm hover:text-red-500"><span aria-hidden="true">🗑</span></button>
                       </span>
                     ))}
                   </div>
@@ -664,7 +667,7 @@ export const NotectorGame: React.FC = () => {
                     <span className="font-mono font-bold text-lg">
                       {builderNotes.length ? builderNotes.map((n) => n.replace(/[0-9]/g, '')).join(' · ') : '—'}
                     </span>
-                    <button onClick={() => setBuilderNotes((prev) => prev.slice(0, -1))} disabled={!builderNotes.length} title="Fjarlægja síðustu" className="ml-auto px-2 py-1 text-sm rounded border border-gray-300 disabled:opacity-40">⌫</button>
+                    <button onClick={() => setBuilderNotes((prev) => prev.slice(0, -1))} disabled={!builderNotes.length} title="Fjarlægja síðustu" aria-label="Fjarlægja síðustu nótu" className="ml-auto px-2 py-1 text-sm rounded border border-gray-300 disabled:opacity-40"><span aria-hidden="true">⌫</span></button>
                     <button onClick={() => setBuilderNotes([])} disabled={!builderNotes.length} className="px-2 py-1 text-sm rounded border border-gray-300 disabled:opacity-40">Hreinsa</button>
                   </div>
                   <div className="flex items-center gap-2">
@@ -700,7 +703,10 @@ export const NotectorGame: React.FC = () => {
         ) : (
           <div className="w-full max-w-[1500px]">
             {/* Music Staff with 4 Bars */}
-            <svg width="100%" viewBox="0 0 1200 360" preserveAspectRatio="xMidYMid meet" className="w-full h-auto bg-white rounded-xl border-2 border-gray-300 shadow-lg">
+            <svg width="100%" viewBox="0 0 1200 360" preserveAspectRatio="xMidYMid meet"
+                 role="img"
+                 aria-label={`Nótnastrengur með ${displayNotes.length} nótum til að lesa og spila. Virka nótan er merkt með ▼.`}
+                 className="w-full h-auto bg-white rounded-xl border-2 border-gray-300 shadow-lg">
               {/* Staff lines */}
               {[0, 1, 2, 3, 4].map((lineIndex) => (
                 <line
@@ -796,6 +802,19 @@ export const NotectorGame: React.FC = () => {
                       stroke={stroke}
                       strokeWidth={3}
                     />
+                    {/* Non-colour status cue (WCAG 1.4.1): a shape, not just a hue. */}
+                    {noteState.status === 'active' && (
+                      <text x={x} y={noteY - 24} textAnchor="middle" fontSize="26"
+                            fontWeight="bold" fill="#1e40af" aria-hidden="true">▼</text>
+                    )}
+                    {noteState.status === 'correct' && (
+                      <text x={x} y={noteY + 8} textAnchor="middle" fontSize="22"
+                            fontWeight="bold" fill="#fff" aria-hidden="true">✓</text>
+                    )}
+                    {noteState.status === 'missed' && (
+                      <text x={x} y={noteY + 8} textAnchor="middle" fontSize="22"
+                            fontWeight="bold" fill="#fff" aria-hidden="true">✗</text>
+                    )}
                     {showNoteNames && (
                       <text
                         x={x}
@@ -821,20 +840,23 @@ export const NotectorGame: React.FC = () => {
                 );
               })}
 
-              {/* Legend */}
+              {/* Legend — each state is shown by shape + colour, never colour alone. */}
               <g transform="translate(60, 338)">
                 <text fontSize="18" fontWeight="bold" fill="#333">Skýring:</text>
                 <circle cx={90} cy={-3} r={10} fill="#fff" stroke="#333" strokeWidth={2} />
                 <text x={108} fontSize="16" fill="#666">= Bíður</text>
 
                 <circle cx={250} cy={-3} r={10} fill="#3b82f6" stroke="#1e40af" strokeWidth={2} />
-                <text x={268} fontSize="16" fill="#666">= Spilaðu núna!</text>
+                <text x={250} y={2} textAnchor="middle" fontSize="13" fontWeight="bold" fill="#fff" aria-hidden="true">▼</text>
+                <text x={268} fontSize="16" fill="#666">= Spilaðu núna! (▼)</text>
 
-                <circle cx={470} cy={-3} r={10} fill="#22c55e" stroke="#16a34a" strokeWidth={2} />
-                <text x={488} fontSize="16" fill="#666">= Rétt</text>
+                <circle cx={490} cy={-3} r={10} fill="#22c55e" stroke="#16a34a" strokeWidth={2} />
+                <text x={490} y={2} textAnchor="middle" fontSize="13" fontWeight="bold" fill="#fff" aria-hidden="true">✓</text>
+                <text x={508} fontSize="16" fill="#666">= Rétt (✓)</text>
 
-                <circle cx={600} cy={-3} r={10} fill="#ef4444" stroke="#dc2626" strokeWidth={2} />
-                <text x={618} fontSize="16" fill="#666">= Missti</text>
+                <circle cx={640} cy={-3} r={10} fill="#ef4444" stroke="#dc2626" strokeWidth={2} />
+                <text x={640} y={2} textAnchor="middle" fontSize="13" fontWeight="bold" fill="#fff" aria-hidden="true">✗</text>
+                <text x={658} fontSize="16" fill="#666">= Missti (✗)</text>
               </g>
             </svg>
 
@@ -846,8 +868,8 @@ export const NotectorGame: React.FC = () => {
                 </p>
                 <p className="text-lg text-gray-500 mt-2">
                   {inputMode === 'pick'
-                    ? 'Lestu bláu nótuna og sláðu inn heiti hennar (C D E F G A B)'
-                    : 'Fylgstu með bláu nótunni — það er merkið þitt til að spila!'}
+                    ? 'Lestu virku nótuna (merkt ▼) og sláðu inn heiti hennar (C D E F G A B)'
+                    : 'Fylgstu með virku nótunni (merkt ▼) — það er merkið þitt til að spila!'}
                 </p>
               </div>
             )}
