@@ -88,6 +88,12 @@ describe('accessibility (axe) — no violations on the main views', () => {
     await expectNoAxeViolations(container);
   });
 
+  it('Chord Detector — self-test panel', async () => {
+    const { container } = render(<ChordDetector />);
+    fireEvent.click(screen.getByRole('button', { name: /sjálfspróf/i }));
+    await expectNoAxeViolations(container);
+  });
+
   it('Composer (empty state)', async () => {
     const { container } = render(<ComposerCanvas />);
     await screen.findByText('Engir hljómar í safninu'); // wait for the mount fetch to settle

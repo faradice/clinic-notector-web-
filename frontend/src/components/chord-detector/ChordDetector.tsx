@@ -4,11 +4,14 @@ import { ChordDiagram } from './ChordDiagram';
 import { shapeFor } from './chordShapes';
 import { chordFromName } from '../composer/chordFromName';
 import { chordApi, type Chord } from '../../api/chords';
+import { ChordSelfTest } from './ChordSelfTest';
 
 export const ChordDetector: React.FC = () => {
   const [active, setActive] = useState(false);
   const [addStatus, setAddStatus] = useState<string | null>(null);
-  const { reading, isListening } = useChordDetector(active);
+  const [mode, setMode] = useState<'mic' | 'selftest'>('mic');
+  // Mic runs only in live mode; the self-test drives its own audio internally.
+  const { reading, isListening } = useChordDetector(active && mode === 'mic');
 
   // Show the current chord, or hold the last detected one when the sound stops.
   const chord = reading.chord;
@@ -41,6 +44,28 @@ export const ChordDetector: React.FC = () => {
       <h2 className="text-2xl font-bold mt-2 mb-1">Hljómagreinir</h2>
       <p className="text-slate-400 mb-6 text-sm">Sláðu hljóm og haltu honum · á tilraunastigi</p>
 
+      {/* Mode: live microphone vs internal self-test */}
+      <div className="flex rounded-lg overflow-hidden border border-slate-600 mb-6" role="group" aria-label="Hamur">
+        <button
+          onClick={() => setMode('mic')}
+          aria-pressed={mode === 'mic'}
+          className={`px-4 py-2 text-sm font-semibold transition-colors ${mode === 'mic' ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+        >
+          <span aria-hidden="true">🎤</span> Hljóðnemi
+        </button>
+        <button
+          onClick={() => setMode('selftest')}
+          aria-pressed={mode === 'selftest'}
+          className={`px-4 py-2 text-sm font-semibold border-l border-slate-600 transition-colors ${mode === 'selftest' ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+        >
+          <span aria-hidden="true">🧪</span> Sjálfspróf
+        </button>
+      </div>
+
+      {mode === 'selftest' ? (
+        <ChordSelfTest />
+      ) : (
+      <>
       {/* Detected chord — announced to screen readers as it changes */}
       <div className="flex flex-col items-center mb-6" role="status" aria-live="polite"
            aria-label={chord ? `Greindur hljómur: ${chord.name}${confident ? '' : ' (óviss)'}` : 'Enginn hljómur greindur'}>
@@ -126,6 +151,8 @@ export const ChordDetector: React.FC = () => {
         Frumgerð: þekkir heiti hljómsins út frá nótunum sem heyrast (dúr, moll, sus, dim, aug, 7-undir).
         Virkar best á skýrt slegnum hljómi sem er haldið — það getur ekki lesið nákvæmt gripið þitt.
       </p>
+      </>
+      )}
     </div>
   );
 };
