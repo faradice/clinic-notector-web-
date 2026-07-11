@@ -371,9 +371,12 @@ export const ComposerCanvas: React.FC = () => {
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex h-screen bg-gray-50">
-        {/* Sidebar - Chord Library */}
-        <div className="w-80 shrink-0 bg-white border-r border-gray-300 overflow-y-auto">
+      {/* Stacks vertically on phones; side-by-side sidebar+canvas from md up
+          (iPad portrait is wide enough). h-screen only applies once side-by-side. */}
+      <div className="flex flex-col md:flex-row min-h-screen md:h-screen bg-gray-50">
+        {/* Sidebar - Chord Library. On phones it's a capped, scrollable panel on
+            top so the canvas below stays reachable. */}
+        <div className="w-full md:w-80 shrink-0 bg-white border-b md:border-b-0 md:border-r border-gray-300 overflow-y-auto max-h-[45vh] md:max-h-none">
           <div className="p-4 border-b border-gray-300">
             <h2 className="text-xl font-bold text-gray-900">Hljómasafn</h2>
             <p className="text-sm text-gray-600 mt-1">Dragðu hljóma á vinnusvæðið</p>
