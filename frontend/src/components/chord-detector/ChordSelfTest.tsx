@@ -27,16 +27,18 @@ interface TestChord {
   midis: number[];   // the voicing we synthesise
 }
 
-// Common open-position triads/tetrads, voiced in a comfortable mid octave.
+// Close-position root-position triads (root, third, fifth — each once, balanced)
+// in octave 3–4. A doubled root + lone high third made the minor 3rd too weak,
+// so minors were read as majors; equal-weight close triads fix that.
 const PROGRESSION: TestChord[] = [
-  { name: 'C',  root: 0, quality: 'maj', midis: [48, 52, 55, 60] }, // C E G C
-  { name: 'Am', root: 9, quality: 'min', midis: [45, 52, 57, 60] }, // A E A C
-  { name: 'F',  root: 5, quality: 'maj', midis: [41, 48, 53, 57] }, // F C F A
-  { name: 'G',  root: 7, quality: 'maj', midis: [43, 50, 55, 59] }, // G D G B
-  { name: 'Em', root: 4, quality: 'min', midis: [40, 47, 52, 55] }, // E B E G
-  { name: 'Dm', root: 2, quality: 'min', midis: [50, 53, 57, 62] }, // D F A D
-  { name: 'A',  root: 9, quality: 'maj', midis: [45, 52, 57, 61] }, // A E A C#
-  { name: 'D',  root: 2, quality: 'maj', midis: [50, 54, 57, 62] }, // D F# A D
+  { name: 'C',  root: 0, quality: 'maj', midis: [60, 64, 67] }, // C4 E4 G4
+  { name: 'Am', root: 9, quality: 'min', midis: [57, 60, 64] }, // A3 C4 E4
+  { name: 'F',  root: 5, quality: 'maj', midis: [53, 57, 60] }, // F3 A3 C4
+  { name: 'G',  root: 7, quality: 'maj', midis: [55, 59, 62] }, // G3 B3 D4
+  { name: 'Em', root: 4, quality: 'min', midis: [52, 55, 59] }, // E3 G3 B3
+  { name: 'Dm', root: 2, quality: 'min', midis: [50, 53, 57] }, // D3 F3 A3
+  { name: 'A',  root: 9, quality: 'maj', midis: [57, 61, 64] }, // A3 C#4 E4
+  { name: 'D',  root: 2, quality: 'maj', midis: [50, 54, 57] }, // D3 F#3 A3
 ];
 
 /** Reduce a detected match to (root, major/minor) for a fair comparison. */
@@ -98,12 +100,15 @@ export const ChordSelfTest: React.FC = () => {
     analyserRef.current = analyser;
     dataRef.current = new Float32Array(analyser.frequencyBinCount);
 
+    // Sawtooth (ALL harmonics, like a guitar) — the detector's HPS multiplies
+    // mag[f]·mag[2f]·mag[3f]·mag[4f], so a triangle (odd harmonics only, ~zero 2nd)
+    // collapses the fundamental to zero and detection fails. Sawtooth fixes that.
     const synth = new Tone.PolySynth(Tone.Synth, {
-      oscillator: { type: 'triangle' },
+      oscillator: { type: 'sawtooth' },
       envelope: { attack: 0.01, decay: 0.2, sustain: 0.6, release: 0.4 },
     }).toDestination();      // audible…
     synth.connect(analyser); // …and tapped for analysis
-    synth.volume.value = -8;
+    synth.volume.value = -14; // sawtooth is bright/loud — tame it
     synthRef.current = synth;
 
     emaRef.current = new Array(12).fill(0);
