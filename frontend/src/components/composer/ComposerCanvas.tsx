@@ -447,17 +447,6 @@ export const ComposerCanvas: React.FC = () => {
             {addChordError && <p className="text-xs text-red-600">{addChordError}</p>}
           </div>
 
-          {/* Browse: ready-made packs (click a pack → new board) and saved workspaces */}
-          <div className="p-4 border-b border-gray-300">
-            <ComposerTree
-              workspaces={workspaces}
-              currentWorkspaceId={currentWorkspace?.id}
-              loading={loading}
-              onPickPack={handleGeneratePack}
-              onPickWorkspace={setCurrentWorkspace}
-            />
-          </div>
-
           {/* Build a board from a key + common progression */}
           <div className="p-4 border-b border-gray-300 space-y-2">
             <label className="text-sm font-semibold text-gray-700">Búa til eftir tóntegund</label>
@@ -503,13 +492,19 @@ export const ComposerCanvas: React.FC = () => {
             </button>
           </div>
 
-          <div className="p-4 space-y-2">
-            {sortedLibrary.map((chord) => (
-              <LibraryChordItem key={`library-${chord.id}`} chord={chord} />
-            ))}
-            {chordLibrary.length === 0 && (
-              <div className="text-center text-gray-500 py-8">Engir hljómar í safninu</div>
-            )}
+          {/* Browse tree: ready-made packs, saved workspaces, and the chord library */}
+          <div className="p-4">
+            <ComposerTree
+              workspaces={workspaces}
+              currentWorkspaceId={currentWorkspace?.id}
+              loading={loading}
+              onPickPack={handleGeneratePack}
+              onPickWorkspace={setCurrentWorkspace}
+              libraryCount={chordLibrary.length}
+              library={sortedLibrary.map((chord) => (
+                <LibraryChordItem key={`library-${chord.id}`} chord={chord} />
+              ))}
+            />
           </div>
         </div>
 
