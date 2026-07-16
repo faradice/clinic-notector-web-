@@ -111,6 +111,16 @@ export const CHORD_PACKS: ChordPack[] = [
       { name: 'Em', shape: [0, 2, 2, 0, 0, 0] },
     ],
   },
+  {
+    id: 'blue-bossa-simple',
+    label: 'Blue Bossa (einfalt)',
+    chords: [
+      { name: 'Cm9', shape: [-1, 3, 1, 3, 3, -1] },
+      { name: 'Fm7', shape: [1, -1, 1, 1, 1, -1] },
+      { name: 'Dm7(b5)', shape: [-1, 5, 6, 5, 6, -1] },
+      { name: 'G7(#5)', shape: [3, -1, 3, 4, 4, -1] },
+    ],
+  },
 ];
 
 /** Build an (unsaved) library chord from a pack chord, keeping its exact voicing. */

@@ -36,6 +36,9 @@ const CHORD_TONES: Record<string, number[]> = {
   'D(add9)': [2, 6, 9, 4],
   'F#dim(add11)': [6, 9, 0, 11],
   'B(add11)': [11, 3, 6, 4],
+  Fm7: [5, 8, 0, 3],
+  'Dm7(b5)': [2, 5, 8, 0],
+  'G7(#5)': [7, 11, 3, 5],
 };
 
 describe('chord packs', () => {
