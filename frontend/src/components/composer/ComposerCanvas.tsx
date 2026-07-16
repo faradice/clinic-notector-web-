@@ -9,6 +9,7 @@ import { ChordCard } from './ChordCard';
 import { MiniChordViewer } from './MiniChordViewer';
 import { chordFromName, normalizeChordName, samePositions } from './chordFromName';
 import { KEYS, progressionsForMode, chordsFor } from './progressions';
+import { CHORD_PACKS, chordFromPack } from './chordPacks';
 import { useChordPlayer } from '../../hooks/useChordPlayer';
 
 /** A chord in the sidebar library — a @dnd-kit draggable source. */
@@ -49,6 +50,7 @@ export const ComposerCanvas: React.FC = () => {
   const [keyIdx, setKeyIdx] = useState(0);
   const [progIdx, setProgIdx] = useState(0);
   const [bars, setBars] = useState(4);
+  const [packId, setPackId] = useState(CHORD_PACKS[0].id);
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -321,6 +323,46 @@ export const ComposerCanvas: React.FC = () => {
     }
   };
 
+  // Drop a ready-made chord pack onto a fresh board. Adds any of the pack's chords
+  // that are missing to the library (with the pack's exact voicing).
+  const handleGeneratePack = async () => {
+    const pack = CHORD_PACKS.find((p) => p.id === packId) ?? CHORD_PACKS[0];
+    try {
+      setLoading(true);
+      let library = chordLibrary;
+      const chords: Chord[] = [];
+      for (const pc of pack.chords) {
+        const gen = chordFromPack(pc);
+        let chord = library.find((c) => c.name === pc.name);
+        if (chord && !samePositions(chord.fretPositions, gen.fretPositions)) {
+          chord = await chordApi.update(chord.id!, { ...chord, ...gen });
+          library = library.map((c) => (c.id === chord!.id ? chord! : c));
+        } else if (!chord) {
+          chord = await chordApi.create(gen as Chord);
+          library = [...library, chord];
+        }
+        chords.push(chord);
+      }
+      setChordLibrary(library);
+      const perRow = 4;
+      let ws = await workspaceApi.create({ name: pack.label, cards: [] });
+      for (let i = 0; i < chords.length; i++) {
+        ws = await workspaceApi.addCard(ws.id!, {
+          chordId: chords[i].id!,
+          positionX: 40 + (i % perRow) * 230,
+          positionY: 40 + Math.floor(i / perRow) * 290,
+        });
+      }
+      setWorkspaces((prev) => [...prev, ws]);
+      setCurrentWorkspace(ws);
+      setSelectedCards(new Set());
+    } catch (e) {
+      console.error('Failed to generate pack:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const stopProgression = useCallback(() => {
     playTimeoutsRef.current.forEach(clearTimeout);
     playTimeoutsRef.current = [];
@@ -447,6 +489,28 @@ export const ComposerCanvas: React.FC = () => {
               className="w-full px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded disabled:opacity-50 transition-colors"
             >
               Búa til borð
+            </button>
+          </div>
+
+          {/* Ready-made chord packs (moods + known songs) */}
+          <div className="p-4 border-b border-gray-300 space-y-2">
+            <label className="text-sm font-semibold text-gray-700">Tilbúnir hljómapakkar</label>
+            <select
+              value={packId}
+              onChange={(e) => setPackId(e.target.value)}
+              aria-label="Hljómapakki"
+              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+            >
+              {CHORD_PACKS.map((p) => (
+                <option key={p.id} value={p.id}>{p.label}</option>
+              ))}
+            </select>
+            <button
+              onClick={handleGeneratePack}
+              disabled={loading}
+              className="w-full px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded disabled:opacity-50 transition-colors"
+            >
+              Búa til borð úr pakka
             </button>
           </div>
 

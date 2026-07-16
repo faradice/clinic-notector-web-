@@ -18,6 +18,13 @@ export const MiniChordViewer: React.FC<MiniChordViewerProps> = ({
   width = 180,
   height = 140,
 }) => {
+  // Base-fret window: if the chord uses frets above the 5th, slide the window up
+  // so high voicings (e.g. x76 80 x) render, with a "6fr" style marker.
+  const fretted = positions.filter((p) => p.fretNumber > 0).map((p) => p.fretNumber);
+  const maxFret = fretted.length ? Math.max(...fretted) : 0;
+  const minFret = fretted.length ? Math.min(...fretted) : 1;
+  const baseFret = maxFret > NUM_FRETS ? minFret : 1;
+
   return (
     <svg width={width} height={height} className="bg-white rounded">
       {/* Frets (vertical lines) */}
@@ -28,10 +35,23 @@ export const MiniChordViewer: React.FC<MiniChordViewerProps> = ({
           y1={MARGIN_TOP}
           x2={MARGIN_LEFT + i * FRET_SPACING}
           y2={MARGIN_TOP + STRING_SPACING * (NUM_STRINGS - 1)}
-          stroke={i === 0 ? '#000' : '#999'}
-          strokeWidth={i === 0 ? 3 : 1}
+          stroke={i === 0 && baseFret === 1 ? '#000' : '#999'}
+          strokeWidth={i === 0 && baseFret === 1 ? 3 : 1}
         />
       ))}
+
+      {/* Base-fret marker for voicings up the neck */}
+      {baseFret > 1 && (
+        <text
+          x={MARGIN_LEFT + FRET_SPACING * NUM_FRETS + 4}
+          y={MARGIN_TOP + 6}
+          fontSize="10"
+          fill="#333"
+          className="select-none"
+        >
+          {baseFret}fr
+        </text>
+      )}
 
       {/* Strings (horizontal lines) */}
       {Array.from({ length: NUM_STRINGS }, (_, i) => {
