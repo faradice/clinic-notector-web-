@@ -44,9 +44,8 @@ interface Props {
   loading: boolean;
   onPickPack: (packId: string) => void;
   onPickWorkspace: (ws: Workspace) => void;
-  /** The draggable library cards, rendered under the "Hljómar" node. */
-  library: React.ReactNode;
-  libraryCount: number;
+  /** Library cards grouped by root note, rendered under the "Hljómar" node. */
+  libraryGroups: { root: string; count: number; items: React.ReactNode }[];
 }
 
 export const ComposerTree: React.FC<Props> = ({
@@ -55,8 +54,7 @@ export const ComposerTree: React.FC<Props> = ({
   loading,
   onPickPack,
   onPickWorkspace,
-  library,
-  libraryCount,
+  libraryGroups,
 }) => {
   const [open, setOpen] = useState<Record<string, boolean>>({ packs: true, workspaces: false, library: true });
   const [active, setActive] = useState('packs');
@@ -85,10 +83,13 @@ export const ComposerTree: React.FC<Props> = ({
     }
     out.push({ key: 'workspaces', level: 0, role: 'branch', expanded: open.workspaces });
     if (open.workspaces) workspaces.forEach((ws) => out.push({ key: 'ws:' + ws.id, level: 1, role: 'leaf' }));
-    // The library node's children are draggable cards, not keyboard leaves.
     out.push({ key: 'library', level: 0, role: 'branch', expanded: open.library });
+    if (open.library) {
+      // Each root-note group is a keyboard branch; its cards are draggable, not leaves.
+      libraryGroups.forEach((g) => out.push({ key: 'root:' + g.root, level: 1, role: 'branch', expanded: !!open['root:' + g.root] }));
+    }
     return out;
-  }, [open, workspaces]);
+  }, [open, workspaces, libraryGroups]);
 
   // Keep the roving focus on a row that still exists (e.g. after a collapse).
   const activeKey = rows.some((r) => r.key === active) ? active : rows[0]?.key ?? '';
@@ -228,13 +229,28 @@ export const ComposerTree: React.FC<Props> = ({
         </button>
         {open.library && (
           <ul role="group" className={CHILDREN}>
-            <li role="none">
-              {libraryCount === 0 ? (
-                <div className="px-2 py-2 text-xs italic text-gray-400">Engir hljómar í safninu</div>
-              ) : (
-                <div className="space-y-2 py-2 pr-1">{library}</div>
-              )}
-            </li>
+            {libraryGroups.length === 0 && (
+              <li role="none" className="px-2 py-2 text-xs italic text-gray-400">Engir hljómar í safninu</li>
+            )}
+            {libraryGroups.map((g) => {
+              const gkey = 'root:' + g.root;
+              return (
+                <li role="treeitem" aria-expanded={!!open[gkey]} key={g.root}>
+                  <button type="button" {...rove(gkey)} onClick={() => toggle(gkey)} className={ROW}>
+                    <span className={CARET} aria-hidden="true">{caret(!!open[gkey])}</span>
+                    {g.root}
+                    <span className="ml-1 text-xs font-normal text-gray-400">({g.count})</span>
+                  </button>
+                  {open[gkey] && (
+                    <ul role="group" className={CHILDREN}>
+                      <li role="none">
+                        <div className="space-y-2 py-2 pr-1">{g.items}</div>
+                      </li>
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </li>

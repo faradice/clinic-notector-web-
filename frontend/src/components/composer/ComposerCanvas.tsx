@@ -13,6 +13,12 @@ import { CHORD_PACKS, chordFromPack } from './chordPacks';
 import { ComposerTree } from './ComposerTree';
 import { useChordPlayer } from '../../hooks/useChordPlayer';
 
+// Pitch class of each root-note spelling, for chromatic ordering of library groups.
+const ROOT_PC: Record<string, number> = {
+  C: 0, 'C#': 1, Db: 1, D: 2, 'D#': 3, Eb: 3, E: 4, F: 5, 'F#': 6, Gb: 6,
+  G: 7, 'G#': 8, Ab: 8, A: 9, 'A#': 10, Bb: 10, B: 11,
+};
+
 /** A chord in the sidebar library — a @dnd-kit draggable source. */
 const LibraryChordItem: React.FC<{ chord: Chord }> = ({ chord }) => {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -263,6 +269,24 @@ export const ComposerCanvas: React.FC = () => {
     [chordLibrary]
   );
 
+  // Group the library by root note, ordered chromatically (C, C#/Db, D … B).
+  const libraryGroups = useMemo(() => {
+    const byRoot = new Map<string, Chord[]>();
+    for (const c of sortedLibrary) {
+      const root = c.rootNote || '?';
+      (byRoot.get(root) ?? byRoot.set(root, []).get(root)!).push(c);
+    }
+    return Array.from(byRoot.keys())
+      .sort((a, b) => (ROOT_PC[a] ?? 99) - (ROOT_PC[b] ?? 99) || a.localeCompare(b))
+      .map((root) => ({
+        root,
+        count: byRoot.get(root)!.length,
+        items: byRoot.get(root)!.map((chord) => (
+          <LibraryChordItem key={`library-${chord.id}`} chord={chord} />
+        )),
+      }));
+  }, [sortedLibrary]);
+
   // Progressions available for the selected key's mode.
   const progOptions = useMemo(() => progressionsForMode(KEYS[keyIdx].mode), [keyIdx]);
 
@@ -500,10 +524,7 @@ export const ComposerCanvas: React.FC = () => {
               loading={loading}
               onPickPack={handleGeneratePack}
               onPickWorkspace={setCurrentWorkspace}
-              libraryCount={chordLibrary.length}
-              library={sortedLibrary.map((chord) => (
-                <LibraryChordItem key={`library-${chord.id}`} chord={chord} />
-              ))}
+              libraryGroups={libraryGroups}
             />
           </div>
         </div>
