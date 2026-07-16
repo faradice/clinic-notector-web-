@@ -22,10 +22,10 @@ type TabId = (typeof TABS)[number]['id'];
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabId>('composer');
-  // First-visit welcome overlay; shown once, remembered in localStorage.
-  const [showOnboarding, setShowOnboarding] = useState(() => {
-    try { return !localStorage.getItem(ONBOARDED_KEY); } catch { return false; }
-  });
+  // Welcome overlay. For now it shows on EVERY load (we like it); the closed
+  // state only lasts the session. Switch back to first-visit-only later by
+  // reading localStorage(ONBOARDED_KEY) here.
+  const [showOnboarding, setShowOnboarding] = useState(true);
   const dismissOnboarding = () => {
     try { localStorage.setItem(ONBOARDED_KEY, '1'); } catch { /* ignore */ }
     setShowOnboarding(false);
