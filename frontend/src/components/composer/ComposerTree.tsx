@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { CHORD_PACKS } from './chordPacks';
 import type { Workspace } from '../../api/workspaces';
 
@@ -30,10 +30,13 @@ function buildPackTree(): PackNode[] {
 
 const PACK_TREE = buildPackTree();
 
-const ROW = 'flex w-full items-center gap-1.5 rounded px-1 py-1 text-left hover:bg-gray-100 disabled:opacity-50';
+const ROW = 'flex w-full items-center gap-1.5 rounded px-1 py-1 text-left hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:opacity-50';
 const CARET = 'inline-block w-3 shrink-0 text-gray-400';
 const BULLET = 'inline-block w-3 shrink-0 text-center text-gray-300';
 const CHILDREN = 'ml-3 border-l border-gray-200 pl-1';
+
+// A visible row in reading order — the model the arrow keys navigate.
+type Row = { key: string; level: number; role: 'branch' | 'leaf'; expanded?: boolean };
 
 interface Props {
   workspaces: Workspace[];
@@ -51,14 +54,87 @@ export const ComposerTree: React.FC<Props> = ({
   onPickWorkspace,
 }) => {
   const [open, setOpen] = useState<Record<string, boolean>>({ packs: true, workspaces: false });
+  const [active, setActive] = useState('packs');
+  const rowRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+
   const toggle = (key: string) => setOpen((o) => ({ ...o, [key]: !o[key] }));
   const caret = (k: boolean) => (k ? '▾' : '▸');
+  const reg = (k: string) => (el: HTMLButtonElement | null) => {
+    if (el) rowRefs.current.set(k, el);
+    else rowRefs.current.delete(k);
+  };
+
+  // Flatten the currently-visible rows, in reading order, for keyboard nav.
+  const rows = useMemo<Row[]>(() => {
+    const out: Row[] = [{ key: 'packs', level: 0, role: 'branch', expanded: open.packs }];
+    if (open.packs) {
+      for (const node of PACK_TREE) {
+        if (node.kind === 'pack') {
+          out.push({ key: 'leaf:' + node.id, level: 1, role: 'leaf' });
+        } else {
+          const gkey = 'g:' + node.label;
+          out.push({ key: gkey, level: 1, role: 'branch', expanded: !!open[gkey] });
+          if (open[gkey]) node.children.forEach((c) => out.push({ key: 'leaf:' + c.id, level: 2, role: 'leaf' }));
+        }
+      }
+    }
+    out.push({ key: 'workspaces', level: 0, role: 'branch', expanded: open.workspaces });
+    if (open.workspaces) workspaces.forEach((ws) => out.push({ key: 'ws:' + ws.id, level: 1, role: 'leaf' }));
+    return out;
+  }, [open, workspaces]);
+
+  // Keep the roving focus on a row that still exists (e.g. after a collapse).
+  const activeKey = rows.some((r) => r.key === active) ? active : rows[0]?.key ?? '';
+
+  const focusRow = (idx: number) => {
+    const t = rows[Math.max(0, Math.min(rows.length - 1, idx))];
+    if (!t) return;
+    setActive(t.key);
+    rowRefs.current.get(t.key)?.focus();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    const idx = rows.findIndex((r) => r.key === activeKey);
+    if (idx < 0) return;
+    const row = rows[idx];
+    switch (e.key) {
+      case 'ArrowDown': e.preventDefault(); focusRow(idx + 1); break;
+      case 'ArrowUp': e.preventDefault(); focusRow(idx - 1); break;
+      case 'Home': e.preventDefault(); focusRow(0); break;
+      case 'End': e.preventDefault(); focusRow(rows.length - 1); break;
+      case 'ArrowRight':
+        e.preventDefault();
+        if (row.role === 'branch') {
+          if (!row.expanded) toggle(row.key);
+          else focusRow(idx + 1); // first child is the next visible row
+        }
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        if (row.role === 'branch' && row.expanded) {
+          toggle(row.key); // collapse
+        } else {
+          // move to parent: nearest earlier row at a shallower level
+          for (let i = idx - 1; i >= 0; i--) {
+            if (rows[i].level < row.level) { focusRow(i); break; }
+          }
+        }
+        break;
+      // Enter/Space activate natively via the focused <button>.
+    }
+  };
+
+  const rove = (k: string) => ({
+    tabIndex: activeKey === k ? 0 : -1,
+    onFocus: () => setActive(k),
+    ref: reg(k),
+  });
 
   return (
-    <ul role="tree" className="select-none text-sm text-gray-700">
+    <ul role="tree" aria-label="Pakkar og vinnusvæði" className="select-none text-sm text-gray-700" onKeyDown={handleKeyDown}>
       {/* Ready-made packs */}
       <li role="treeitem" aria-expanded={open.packs}>
-        <button type="button" onClick={() => toggle('packs')} className={`${ROW} font-semibold`}>
+        <button type="button" {...rove('packs')} onClick={() => toggle('packs')} className={`${ROW} font-semibold`}>
           <span className={CARET} aria-hidden="true">{caret(open.packs)}</span>
           Tilbúnir pakkar
         </button>
@@ -69,6 +145,7 @@ export const ComposerTree: React.FC<Props> = ({
                 <li role="treeitem" key={node.id}>
                   <button
                     type="button"
+                    {...rove('leaf:' + node.id)}
                     disabled={loading}
                     onClick={() => onPickPack(node.id)}
                     className={ROW}
@@ -79,7 +156,7 @@ export const ComposerTree: React.FC<Props> = ({
                 </li>
               ) : (
                 <li role="treeitem" aria-expanded={!!open['g:' + node.label]} key={node.label}>
-                  <button type="button" onClick={() => toggle('g:' + node.label)} className={ROW}>
+                  <button type="button" {...rove('g:' + node.label)} onClick={() => toggle('g:' + node.label)} className={ROW}>
                     <span className={CARET} aria-hidden="true">{caret(!!open['g:' + node.label])}</span>
                     {node.label}
                   </button>
@@ -89,6 +166,7 @@ export const ComposerTree: React.FC<Props> = ({
                         <li role="treeitem" key={c.id}>
                           <button
                             type="button"
+                            {...rove('leaf:' + c.id)}
                             disabled={loading}
                             onClick={() => onPickPack(c.id)}
                             className={ROW}
@@ -109,7 +187,7 @@ export const ComposerTree: React.FC<Props> = ({
 
       {/* Saved workspaces */}
       <li role="treeitem" aria-expanded={open.workspaces}>
-        <button type="button" onClick={() => toggle('workspaces')} className={`${ROW} font-semibold`}>
+        <button type="button" {...rove('workspaces')} onClick={() => toggle('workspaces')} className={`${ROW} font-semibold`}>
           <span className={CARET} aria-hidden="true">{caret(open.workspaces)}</span>
           Mín vinnusvæði
         </button>
@@ -122,6 +200,7 @@ export const ComposerTree: React.FC<Props> = ({
               <li role="treeitem" aria-selected={ws.id === currentWorkspaceId} key={ws.id}>
                 <button
                   type="button"
+                  {...rove('ws:' + ws.id)}
                   onClick={() => onPickWorkspace(ws)}
                   className={`${ROW} ${ws.id === currentWorkspaceId ? 'bg-emerald-50 font-semibold text-emerald-700' : ''}`}
                   title={`Opna: ${ws.name}`}
