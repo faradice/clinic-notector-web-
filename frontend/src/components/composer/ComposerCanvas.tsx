@@ -456,7 +456,7 @@ export const ComposerCanvas: React.FC = () => {
 
           {/* Create a board — a ready-made pack, or a custom key + progression */}
           <div className="p-4 border-b border-gray-300 space-y-2">
-            <label className="text-sm font-semibold text-gray-700">Nýtt borð</label>
+            <label className="text-sm font-semibold text-gray-700">Búa til borð</label>
             <select
               value={boardSource}
               onChange={(e) => setBoardSource(e.target.value)}
