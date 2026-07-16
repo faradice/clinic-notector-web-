@@ -28,6 +28,14 @@ const CHORD_TONES: Record<string, number[]> = {
   Ebm9: [3, 6, 10, 1, 5],
   Ab13: [8, 0, 3, 6, 10, 5],
   Dbmaj7: [1, 5, 8, 0],
+  Am: [9, 0, 4],
+  C: [0, 4, 7],
+  Em: [4, 7, 11],
+  B7: [11, 3, 6, 9],
+  'Am(add9)': [9, 0, 4, 11],
+  'D(add9)': [2, 6, 9, 4],
+  'F#dim(add11)': [6, 9, 0, 11],
+  'B(add11)': [11, 3, 6, 4],
 };
 
 describe('chord packs', () => {
@@ -36,7 +44,6 @@ describe('chord packs', () => {
       expect(p.id).toBeTruthy();
       expect(p.label).toBeTruthy();
       expect(p.chords.length).toBeGreaterThan(0);
-      expect(new Set(p.chords.map((c) => c.name)).size).toBe(p.chords.length);
     }
   });
 

@@ -67,6 +67,50 @@ export const CHORD_PACKS: ChordPack[] = [
       { name: 'Dbmaj7', shape: [-1, 4, 6, 5, 6, -1] },
     ],
   },
+  {
+    id: 'myos-verse',
+    label: 'Make Your Own Song — Verse',
+    chords: [
+      { name: 'G', shape: [3, 2, 0, 0, 0, 3] },
+      { name: 'Am', shape: [-1, 0, 2, 2, 1, 0] },
+      { name: 'C', shape: [-1, 3, 2, 0, 1, 0] },
+      { name: 'G', shape: [3, 2, 0, 0, 0, 3] },
+    ],
+  },
+  {
+    id: 'myos-chorus',
+    label: 'Make Your Own Song — Chorus',
+    chords: [
+      { name: 'Em', shape: [0, 2, 2, 0, 0, 0] },
+      { name: 'D', shape: [-1, -1, 0, 2, 3, 2] },
+      { name: 'C', shape: [-1, 3, 2, 0, 1, 0] },
+      { name: 'G', shape: [3, 2, 0, 0, 0, 3] },
+    ],
+  },
+  {
+    id: 'myos-bridge',
+    label: 'Make Your Own Song — Bridge',
+    chords: [
+      { name: 'C', shape: [-1, 3, 2, 0, 1, 0] },
+      { name: 'Em', shape: [0, 2, 2, 0, 0, 0] },
+      { name: 'G', shape: [3, 2, 0, 0, 0, 3] },
+      { name: 'B7', shape: [-1, 2, 1, 2, 0, 2] },
+    ],
+  },
+  {
+    id: 'classic-chords',
+    label: 'Classic Chords',
+    chords: [
+      { name: 'Em', shape: [0, 2, 2, 0, 0, 0] },
+      { name: 'Am(add9)', shape: [-1, 0, 2, 5, 0, 0] },
+      { name: 'D(add9)', shape: [-1, 5, 4, 2, 3, 0] },
+      { name: 'G', shape: [3, 2, 0, 0, 0, 3] },
+      { name: 'C', shape: [-1, 3, 2, 0, 1, 0] },
+      { name: 'F#dim(add11)', shape: [-1, 0, 4, 5, 0, -1] },
+      { name: 'B(add11)', shape: [-1, 2, 1, -1, 5, 2] },
+      { name: 'Em', shape: [0, 2, 2, 0, 0, 0] },
+    ],
+  },
 ];
 
 /** Build an (unsaved) library chord from a pack chord, keeping its exact voicing. */
