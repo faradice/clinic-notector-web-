@@ -50,7 +50,8 @@ export const ComposerCanvas: React.FC = () => {
   const [keyIdx, setKeyIdx] = useState(0);
   const [progIdx, setProgIdx] = useState(0);
   const [bars, setBars] = useState(4);
-  const [packId, setPackId] = useState(CHORD_PACKS[0].id);
+  // Board source: a pack id, or 'custom' (key + progression generator).
+  const [boardSource, setBoardSource] = useState<string>(CHORD_PACKS[0].id);
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -325,8 +326,14 @@ export const ComposerCanvas: React.FC = () => {
 
   // Drop a ready-made chord pack onto a fresh board. Adds any of the pack's chords
   // that are missing to the library (with the pack's exact voicing).
+  // One entry point for "Búa til borð": custom progression or a ready-made pack.
+  const handleCreateBoard = () => {
+    if (boardSource === 'custom') return handleGenerateBoard();
+    return handleGeneratePack();
+  };
+
   const handleGeneratePack = async () => {
-    const pack = CHORD_PACKS.find((p) => p.id === packId) ?? CHORD_PACKS[0];
+    const pack = CHORD_PACKS.find((p) => p.id === boardSource) ?? CHORD_PACKS[0];
     try {
       setLoading(true);
       let library = chordLibrary;
@@ -447,70 +454,69 @@ export const ComposerCanvas: React.FC = () => {
             {addChordError && <p className="text-xs text-red-600">{addChordError}</p>}
           </div>
 
-          {/* Generate a board from a key + common progression */}
+          {/* Create a board — a ready-made pack, or a custom key + progression */}
           <div className="p-4 border-b border-gray-300 space-y-2">
-            <label className="text-sm font-semibold text-gray-700">Ný hljómaframvinda</label>
+            <label className="text-sm font-semibold text-gray-700">Nýtt borð</label>
             <select
-              value={keyIdx}
-              onChange={(e) => { setKeyIdx(parseInt(e.target.value)); setProgIdx(0); }}
-              aria-label="Tóntegund"
+              value={boardSource}
+              onChange={(e) => setBoardSource(e.target.value)}
+              aria-label="Uppspretta borðs"
               className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
             >
-              {KEYS.map((k, i) => (
-                <option key={k.label} value={i}>{k.label}</option>
-              ))}
+              <optgroup label="Tilbúnir pakkar">
+                {CHORD_PACKS.map((p) => (
+                  <option key={p.id} value={p.id}>{p.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Eigin framvinda">
+                <option value="custom">Eftir tóntegund…</option>
+              </optgroup>
             </select>
-            <select
-              value={progIdx}
-              onChange={(e) => setProgIdx(parseInt(e.target.value))}
-              aria-label="Framvinda"
-              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
-            >
-              {progOptions.map((p, i) => (
-                <option key={p.label} value={i}>{p.label}</option>
-              ))}
-            </select>
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600">Taktar:</label>
-              <input
-                type="number"
-                min={1}
-                max={32}
-                value={bars}
-                onChange={(e) => setBars(Math.max(1, Math.min(32, parseInt(e.target.value) || 1)))}
-                className="w-20 px-2 py-1.5 border border-gray-300 rounded text-sm"
-                title="Fjöldi takta — framvindan endurtekur sig til að fylla þá"
-                aria-label="Fjöldi takta"
-              />
-            </div>
+
+            {boardSource === 'custom' && (
+              <>
+                <select
+                  value={keyIdx}
+                  onChange={(e) => { setKeyIdx(parseInt(e.target.value)); setProgIdx(0); }}
+                  aria-label="Tóntegund"
+                  className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                >
+                  {KEYS.map((k, i) => (
+                    <option key={k.label} value={i}>{k.label}</option>
+                  ))}
+                </select>
+                <select
+                  value={progIdx}
+                  onChange={(e) => setProgIdx(parseInt(e.target.value))}
+                  aria-label="Framvinda"
+                  className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                >
+                  {progOptions.map((p, i) => (
+                    <option key={p.label} value={i}>{p.label}</option>
+                  ))}
+                </select>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-600">Taktar:</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={32}
+                    value={bars}
+                    onChange={(e) => setBars(Math.max(1, Math.min(32, parseInt(e.target.value) || 1)))}
+                    className="w-20 px-2 py-1.5 border border-gray-300 rounded text-sm"
+                    title="Fjöldi takta — framvindan endurtekur sig til að fylla þá"
+                    aria-label="Fjöldi takta"
+                  />
+                </div>
+              </>
+            )}
+
             <button
-              onClick={handleGenerateBoard}
+              onClick={handleCreateBoard}
               disabled={loading}
               className="w-full px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded disabled:opacity-50 transition-colors"
             >
               Búa til borð
-            </button>
-          </div>
-
-          {/* Ready-made chord packs (moods + known songs) */}
-          <div className="p-4 border-b border-gray-300 space-y-2">
-            <label className="text-sm font-semibold text-gray-700">Tilbúnir hljómapakkar</label>
-            <select
-              value={packId}
-              onChange={(e) => setPackId(e.target.value)}
-              aria-label="Hljómapakki"
-              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
-            >
-              {CHORD_PACKS.map((p) => (
-                <option key={p.id} value={p.id}>{p.label}</option>
-              ))}
-            </select>
-            <button
-              onClick={handleGeneratePack}
-              disabled={loading}
-              className="w-full px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded disabled:opacity-50 transition-colors"
-            >
-              Búa til borð úr pakka
             </button>
           </div>
 
