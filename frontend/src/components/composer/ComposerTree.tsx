@@ -39,25 +39,31 @@ const CHILDREN = 'ml-3 border-l border-gray-200 pl-1';
 type Row = { key: string; level: number; role: 'branch' | 'leaf'; expanded?: boolean };
 
 interface Props {
-  workspaces: Workspace[];
-  currentWorkspaceId: number | null | undefined;
-  loading: boolean;
-  onPickPack: (packId: string) => void;
-  onPickWorkspace: (ws: Workspace) => void;
+  /** 'boards' = packs + saved workspaces; 'library' = the draggable chord library. */
+  variant: 'boards' | 'library';
+  workspaces?: Workspace[];
+  currentWorkspaceId?: number | null;
+  loading?: boolean;
+  onPickPack?: (packId: string) => void;
+  onPickWorkspace?: (ws: Workspace) => void;
   /** Library grouped by root note; each chord carries its name (for filtering). */
-  libraryGroups: { root: string; chords: { id: number; name: string; node: React.ReactNode }[] }[];
+  libraryGroups?: { root: string; chords: { id: number; name: string; node: React.ReactNode }[] }[];
 }
 
 export const ComposerTree: React.FC<Props> = ({
-  workspaces,
+  variant,
+  workspaces = [],
   currentWorkspaceId,
-  loading,
-  onPickPack,
-  onPickWorkspace,
-  libraryGroups,
+  loading = false,
+  onPickPack = () => {},
+  onPickWorkspace = () => {},
+  libraryGroups = [],
 }) => {
-  const [open, setOpen] = useState<Record<string, boolean>>({ packs: true, workspaces: false, library: true });
-  const [active, setActive] = useState('packs');
+  const isBoards = variant === 'boards';
+  const [open, setOpen] = useState<Record<string, boolean>>(
+    isBoards ? { packs: true, workspaces: false } : { library: true },
+  );
+  const [active, setActive] = useState(isBoards ? 'packs' : 'library');
   const [query, setQuery] = useState('');
   const rowRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
@@ -87,27 +93,31 @@ export const ComposerTree: React.FC<Props> = ({
 
   // Flatten the currently-visible rows, in reading order, for keyboard nav.
   const rows = useMemo<Row[]>(() => {
-    const out: Row[] = [{ key: 'packs', level: 0, role: 'branch', expanded: open.packs }];
-    if (open.packs) {
-      for (const node of PACK_TREE) {
-        if (node.kind === 'pack') {
-          out.push({ key: 'leaf:' + node.id, level: 1, role: 'leaf' });
-        } else {
-          const gkey = 'g:' + node.label;
-          out.push({ key: gkey, level: 1, role: 'branch', expanded: !!open[gkey] });
-          if (open[gkey]) node.children.forEach((c) => out.push({ key: 'leaf:' + c.id, level: 2, role: 'leaf' }));
+    const out: Row[] = [];
+    if (isBoards) {
+      out.push({ key: 'packs', level: 0, role: 'branch', expanded: open.packs });
+      if (open.packs) {
+        for (const node of PACK_TREE) {
+          if (node.kind === 'pack') {
+            out.push({ key: 'leaf:' + node.id, level: 1, role: 'leaf' });
+          } else {
+            const gkey = 'g:' + node.label;
+            out.push({ key: gkey, level: 1, role: 'branch', expanded: !!open[gkey] });
+            if (open[gkey]) node.children.forEach((c) => out.push({ key: 'leaf:' + c.id, level: 2, role: 'leaf' }));
+          }
         }
       }
-    }
-    out.push({ key: 'workspaces', level: 0, role: 'branch', expanded: open.workspaces });
-    if (open.workspaces) workspaces.forEach((ws) => out.push({ key: 'ws:' + ws.id, level: 1, role: 'leaf' }));
-    out.push({ key: 'library', level: 0, role: 'branch', expanded: libOpen });
-    if (libOpen) {
-      // Each root-note group is a keyboard branch; its cards are draggable, not leaves.
-      filteredGroups.forEach((g) => out.push({ key: 'root:' + g.root, level: 1, role: 'branch', expanded: groupOpen('root:' + g.root) }));
+      out.push({ key: 'workspaces', level: 0, role: 'branch', expanded: open.workspaces });
+      if (open.workspaces) workspaces.forEach((ws) => out.push({ key: 'ws:' + ws.id, level: 1, role: 'leaf' }));
+    } else {
+      out.push({ key: 'library', level: 0, role: 'branch', expanded: libOpen });
+      if (libOpen) {
+        // Each root-note group is a keyboard branch; its cards are draggable, not leaves.
+        filteredGroups.forEach((g) => out.push({ key: 'root:' + g.root, level: 1, role: 'branch', expanded: groupOpen('root:' + g.root) }));
+      }
     }
     return out;
-  }, [open, workspaces, filteredGroups, libOpen, q]);
+  }, [isBoards, open, workspaces, filteredGroups, libOpen, q]);
 
   // Keep the roving focus on a row that still exists (e.g. after a collapse).
   const activeKey = rows.some((r) => r.key === active) ? active : rows[0]?.key ?? '';
@@ -156,9 +166,97 @@ export const ComposerTree: React.FC<Props> = ({
     ref: reg(k),
   });
 
+  // ---- Boards variant: ready-made packs + saved workspaces ----
+  if (isBoards) {
+    return (
+      <ul role="tree" aria-label="Borð" className="select-none text-sm text-gray-700" onKeyDown={handleKeyDown}>
+        {/* Ready-made packs */}
+        <li role="treeitem" aria-expanded={open.packs}>
+          <button type="button" {...rove('packs')} onClick={() => toggle('packs')} className={`${ROW} font-semibold`}>
+            <span className={CARET} aria-hidden="true">{caret(open.packs)}</span>
+            Tilbúnir pakkar
+          </button>
+          {open.packs && (
+            <ul role="group" className={CHILDREN}>
+              {PACK_TREE.map((node) =>
+                node.kind === 'pack' ? (
+                  <li role="treeitem" key={node.id}>
+                    <button
+                      type="button"
+                      {...rove('leaf:' + node.id)}
+                      disabled={loading}
+                      onClick={() => onPickPack(node.id)}
+                      className={ROW}
+                      title={`Búa til borð: ${node.label}`}
+                    >
+                      <span className={BULLET} aria-hidden="true">•</span> {node.label}
+                    </button>
+                  </li>
+                ) : (
+                  <li role="treeitem" aria-expanded={!!open['g:' + node.label]} key={node.label}>
+                    <button type="button" {...rove('g:' + node.label)} onClick={() => toggle('g:' + node.label)} className={ROW}>
+                      <span className={CARET} aria-hidden="true">{caret(!!open['g:' + node.label])}</span>
+                      {node.label}
+                    </button>
+                    {open['g:' + node.label] && (
+                      <ul role="group" className={CHILDREN}>
+                        {node.children.map((c) => (
+                          <li role="treeitem" key={c.id}>
+                            <button
+                              type="button"
+                              {...rove('leaf:' + c.id)}
+                              disabled={loading}
+                              onClick={() => onPickPack(c.id)}
+                              className={ROW}
+                              title={`Búa til borð: ${node.label} — ${c.label}`}
+                            >
+                              <span className={BULLET} aria-hidden="true">•</span> {c.label}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                ),
+              )}
+            </ul>
+          )}
+        </li>
+
+        {/* Saved workspaces */}
+        <li role="treeitem" aria-expanded={open.workspaces}>
+          <button type="button" {...rove('workspaces')} onClick={() => toggle('workspaces')} className={`${ROW} font-semibold`}>
+            <span className={CARET} aria-hidden="true">{caret(open.workspaces)}</span>
+            Mín vinnusvæði
+          </button>
+          {open.workspaces && (
+            <ul role="group" className={CHILDREN}>
+              {workspaces.length === 0 && (
+                <li role="none" className="px-2 py-1 text-xs italic text-gray-400">Engin vinnusvæði enn</li>
+              )}
+              {workspaces.map((ws) => (
+                <li role="treeitem" aria-selected={ws.id === currentWorkspaceId} key={ws.id}>
+                  <button
+                    type="button"
+                    {...rove('ws:' + ws.id)}
+                    onClick={() => onPickWorkspace(ws)}
+                    className={`${ROW} ${ws.id === currentWorkspaceId ? 'bg-emerald-50 font-semibold text-emerald-700' : ''}`}
+                    title={`Opna: ${ws.name}`}
+                  >
+                    <span className={BULLET} aria-hidden="true">•</span> {ws.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </li>
+      </ul>
+    );
+  }
+
+  // ---- Library variant: search + chords grouped by root note ----
   return (
     <div className="space-y-2">
-      {/* Filter the chord library */}
       <div className="relative">
         <input
           type="text"
@@ -181,124 +279,42 @@ export const ComposerTree: React.FC<Props> = ({
         )}
       </div>
 
-      <ul role="tree" aria-label="Pakkar og vinnusvæði" className="select-none text-sm text-gray-700" onKeyDown={handleKeyDown}>
-        {/* Ready-made packs */}
-      <li role="treeitem" aria-expanded={open.packs}>
-        <button type="button" {...rove('packs')} onClick={() => toggle('packs')} className={`${ROW} font-semibold`}>
-          <span className={CARET} aria-hidden="true">{caret(open.packs)}</span>
-          Tilbúnir pakkar
-        </button>
-        {open.packs && (
-          <ul role="group" className={CHILDREN}>
-            {PACK_TREE.map((node) =>
-              node.kind === 'pack' ? (
-                <li role="treeitem" key={node.id}>
-                  <button
-                    type="button"
-                    {...rove('leaf:' + node.id)}
-                    disabled={loading}
-                    onClick={() => onPickPack(node.id)}
-                    className={ROW}
-                    title={`Búa til borð: ${node.label}`}
-                  >
-                    <span className={BULLET} aria-hidden="true">•</span> {node.label}
-                  </button>
+      <ul role="tree" aria-label="Hljómasafn" className="select-none text-sm text-gray-700" onKeyDown={handleKeyDown}>
+        <li role="treeitem" aria-expanded={libOpen}>
+          <button type="button" {...rove('library')} onClick={() => toggle('library')} className={`${ROW} font-semibold`}>
+            <span className={CARET} aria-hidden="true">{caret(libOpen)}</span>
+            Hljómar
+          </button>
+          {libOpen && (
+            <ul role="group" className={CHILDREN}>
+              {filteredGroups.length === 0 && (
+                <li role="none" className="px-2 py-2 text-xs italic text-gray-400">
+                  {q ? `Enginn hljómur passar við „${query.trim()}“` : 'Engir hljómar í safninu'}
                 </li>
-              ) : (
-                <li role="treeitem" aria-expanded={!!open['g:' + node.label]} key={node.label}>
-                  <button type="button" {...rove('g:' + node.label)} onClick={() => toggle('g:' + node.label)} className={ROW}>
-                    <span className={CARET} aria-hidden="true">{caret(!!open['g:' + node.label])}</span>
-                    {node.label}
-                  </button>
-                  {open['g:' + node.label] && (
-                    <ul role="group" className={CHILDREN}>
-                      {node.children.map((c) => (
-                        <li role="treeitem" key={c.id}>
-                          <button
-                            type="button"
-                            {...rove('leaf:' + c.id)}
-                            disabled={loading}
-                            onClick={() => onPickPack(c.id)}
-                            className={ROW}
-                            title={`Búa til borð: ${node.label} — ${c.label}`}
-                          >
-                            <span className={BULLET} aria-hidden="true">•</span> {c.label}
-                          </button>
+              )}
+              {filteredGroups.map((g) => {
+                const gkey = 'root:' + g.root;
+                const gopen = groupOpen(gkey);
+                return (
+                  <li role="treeitem" aria-expanded={gopen} key={g.root}>
+                    <button type="button" {...rove(gkey)} onClick={() => toggle(gkey)} className={ROW}>
+                      <span className={CARET} aria-hidden="true">{caret(gopen)}</span>
+                      {g.root}
+                      <span className="ml-1 text-xs font-normal text-gray-400">({g.count})</span>
+                    </button>
+                    {gopen && (
+                      <ul role="group" className={CHILDREN}>
+                        <li role="none">
+                          <div className="space-y-2 py-2 pr-1">{g.items}</div>
                         </li>
-                      ))}
-                    </ul>
-                  )}
-                </li>
-              ),
-            )}
-          </ul>
-        )}
-      </li>
-
-      {/* Saved workspaces */}
-      <li role="treeitem" aria-expanded={open.workspaces}>
-        <button type="button" {...rove('workspaces')} onClick={() => toggle('workspaces')} className={`${ROW} font-semibold`}>
-          <span className={CARET} aria-hidden="true">{caret(open.workspaces)}</span>
-          Mín vinnusvæði
-        </button>
-        {open.workspaces && (
-          <ul role="group" className={CHILDREN}>
-            {workspaces.length === 0 && (
-              <li role="none" className="px-2 py-1 text-xs italic text-gray-400">Engin vinnusvæði enn</li>
-            )}
-            {workspaces.map((ws) => (
-              <li role="treeitem" aria-selected={ws.id === currentWorkspaceId} key={ws.id}>
-                <button
-                  type="button"
-                  {...rove('ws:' + ws.id)}
-                  onClick={() => onPickWorkspace(ws)}
-                  className={`${ROW} ${ws.id === currentWorkspaceId ? 'bg-emerald-50 font-semibold text-emerald-700' : ''}`}
-                  title={`Opna: ${ws.name}`}
-                >
-                  <span className={BULLET} aria-hidden="true">•</span> {ws.name}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </li>
-
-      {/* Chord library — the draggable source cards, grouped by root note */}
-      <li role="treeitem" aria-expanded={libOpen}>
-        <button type="button" {...rove('library')} onClick={() => toggle('library')} className={`${ROW} font-semibold`}>
-          <span className={CARET} aria-hidden="true">{caret(libOpen)}</span>
-          Hljómar
-        </button>
-        {libOpen && (
-          <ul role="group" className={CHILDREN}>
-            {filteredGroups.length === 0 && (
-              <li role="none" className="px-2 py-2 text-xs italic text-gray-400">
-                {q ? `Enginn hljómur passar við „${query.trim()}“` : 'Engir hljómar í safninu'}
-              </li>
-            )}
-            {filteredGroups.map((g) => {
-              const gkey = 'root:' + g.root;
-              const gopen = groupOpen(gkey);
-              return (
-                <li role="treeitem" aria-expanded={gopen} key={g.root}>
-                  <button type="button" {...rove(gkey)} onClick={() => toggle(gkey)} className={ROW}>
-                    <span className={CARET} aria-hidden="true">{caret(gopen)}</span>
-                    {g.root}
-                    <span className="ml-1 text-xs font-normal text-gray-400">({g.count})</span>
-                  </button>
-                  {gopen && (
-                    <ul role="group" className={CHILDREN}>
-                      <li role="none">
-                        <div className="space-y-2 py-2 pr-1">{g.items}</div>
-                      </li>
-                    </ul>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </li>
+                      </ul>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </li>
       </ul>
     </div>
   );

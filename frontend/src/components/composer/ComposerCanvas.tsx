@@ -450,32 +450,22 @@ export const ComposerCanvas: React.FC = () => {
         {/* Sidebar - Chord Library. On phones it's a capped, scrollable panel on
             top so the canvas below stays reachable. */}
         <div className="w-full md:w-80 shrink-0 bg-white border-b md:border-b-0 md:border-r border-gray-300 overflow-y-auto max-h-[45vh] md:max-h-none">
+          {/* ===================== BORÐ (arrangements) ===================== */}
           <div className="p-4 border-b border-gray-300">
-            <h2 className="text-xl font-bold text-gray-900">Hljómasafn</h2>
-            <p className="text-sm text-gray-600 mt-1">Dragðu hljóma á vinnusvæðið</p>
+            <h2 className="text-xl font-bold text-gray-900">Borð</h2>
+            <p className="text-sm text-gray-600 mt-1">Veldu pakka, opnaðu vinnusvæði eða búðu til nýtt</p>
           </div>
 
-          {/* Add a chord by name */}
-          <div className="p-4 border-b border-gray-300 space-y-2">
-            <label className="text-sm font-semibold text-gray-700">Bæta við hljómi</label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newChordName}
-                onChange={(e) => { setNewChordName(e.target.value); setAddChordError(null); }}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleAddChord(); }}
-                placeholder="t.d. C, Am, G7"
-                className="flex-1 min-w-0 px-2 py-1.5 border border-gray-300 rounded text-sm"
-              />
-              <button
-                onClick={handleAddChord}
-                disabled={loading || !newChordName.trim()}
-                className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded disabled:opacity-50 transition-colors"
-              >
-                Bæta við
-              </button>
-            </div>
-            {addChordError && <p className="text-xs text-red-600">{addChordError}</p>}
+          {/* Packs + saved workspaces */}
+          <div className="p-4 border-b border-gray-300">
+            <ComposerTree
+              variant="boards"
+              workspaces={workspaces}
+              currentWorkspaceId={currentWorkspace?.id}
+              loading={loading}
+              onPickPack={handleGeneratePack}
+              onPickWorkspace={setCurrentWorkspace}
+            />
           </div>
 
           {/* Build a board from a key + common progression */}
@@ -523,16 +513,38 @@ export const ComposerCanvas: React.FC = () => {
             </button>
           </div>
 
-          {/* Browse tree: ready-made packs, saved workspaces, and the chord library */}
+          {/* ================== HLJÓMASAFN (chord palette) ================== */}
+          <div className="p-4 border-t-8 border-gray-100 border-b border-gray-300">
+            <h2 className="text-xl font-bold text-gray-900">Hljómasafn</h2>
+            <p className="text-sm text-gray-600 mt-1">Dragðu hljóma á borðið</p>
+          </div>
+
+          {/* Add a chord by name */}
+          <div className="p-4 border-b border-gray-300 space-y-2">
+            <label className="text-sm font-semibold text-gray-700">Bæta við hljómi</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newChordName}
+                onChange={(e) => { setNewChordName(e.target.value); setAddChordError(null); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleAddChord(); }}
+                placeholder="t.d. C, Am, G7"
+                className="flex-1 min-w-0 px-2 py-1.5 border border-gray-300 rounded text-sm"
+              />
+              <button
+                onClick={handleAddChord}
+                disabled={loading || !newChordName.trim()}
+                className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded disabled:opacity-50 transition-colors"
+              >
+                Bæta við
+              </button>
+            </div>
+            {addChordError && <p className="text-xs text-red-600">{addChordError}</p>}
+          </div>
+
+          {/* Search + chords grouped by root note (draggable) */}
           <div className="p-4">
-            <ComposerTree
-              workspaces={workspaces}
-              currentWorkspaceId={currentWorkspace?.id}
-              loading={loading}
-              onPickPack={handleGeneratePack}
-              onPickWorkspace={setCurrentWorkspace}
-              libraryGroups={libraryGroups}
-            />
+            <ComposerTree variant="library" libraryGroups={libraryGroups} />
           </div>
         </div>
 
