@@ -6,6 +6,7 @@ import com.raggi.clinicnotector.domain.model.WorkspaceCard;
 import com.raggi.clinicnotector.domain.repository.ChordRepository;
 import com.raggi.clinicnotector.domain.repository.WorkspaceRepository;
 import com.raggi.clinicnotector.dto.WorkspaceDTO;
+import com.raggi.clinicnotector.dto.WorkspaceCardDTO;
 import com.raggi.clinicnotector.mapper.WorkspaceMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -43,6 +44,20 @@ public class WorkspaceController {
     @PostMapping
     public ResponseEntity<WorkspaceDTO> createWorkspace(@RequestBody WorkspaceDTO workspaceDTO) {
         Workspace workspace = workspaceMapper.toEntity(workspaceDTO);
+        // Persist any cards supplied up front in the same save (cascade = ALL), so a
+        // generated board is one round-trip instead of create + one POST per card.
+        if (workspaceDTO.getCards() != null) {
+            for (WorkspaceCardDTO cardDTO : workspaceDTO.getCards()) {
+                Chord chord = chordRepository.findById(cardDTO.getChordId())
+                        .orElseThrow(() -> new RuntimeException("Chord not found: " + cardDTO.getChordId()));
+                workspace.getCards().add(WorkspaceCard.builder()
+                        .workspace(workspace)
+                        .chord(chord)
+                        .positionX(cardDTO.getPositionX())
+                        .positionY(cardDTO.getPositionY())
+                        .build());
+            }
+        }
         Workspace savedWorkspace = workspaceRepository.save(workspace);
         return ResponseEntity.status(HttpStatus.CREATED).body(workspaceMapper.toDTO(savedWorkspace));
     }

@@ -323,21 +323,25 @@ export const ComposerCanvas: React.FC = () => {
         byName.set(name, chord);
       }
       setChordLibrary(library);
-      // New workspace; lay one chord per bar, 4 bars per row.
+      // New workspace; lay one chord per bar, 4 bars per row — all cards in one call.
       const perRow = 4;
-      let ws = await workspaceApi.create({
+      const cards = barNames
+        .map((name, i) => {
+          const chord = byName.get(name);
+          return chord
+            ? {
+                chordId: chord.id!,
+                chordName: chord.name,
+                positionX: 40 + (i % perRow) * 230,
+                positionY: 40 + Math.floor(i / perRow) * 290,
+              }
+            : null;
+        })
+        .filter((c): c is NonNullable<typeof c> => c !== null);
+      const ws = await workspaceApi.create({
         name: `${key.label} · ${prog.label} · ${bars} taktar`,
-        cards: [],
+        cards,
       });
-      for (let i = 0; i < barNames.length; i++) {
-        const chord = byName.get(barNames[i]);
-        if (!chord) continue;
-        ws = await workspaceApi.addCard(ws.id!, {
-          chordId: chord.id!,
-          positionX: 40 + (i % perRow) * 230,
-          positionY: 40 + Math.floor(i / perRow) * 290,
-        });
-      }
       setWorkspaces((prev) => [...prev, ws]);
       setCurrentWorkspace(ws);
       setSelectedCards(new Set());
@@ -370,14 +374,16 @@ export const ComposerCanvas: React.FC = () => {
       }
       setChordLibrary(library);
       const perRow = 4;
-      let ws = await workspaceApi.create({ name: pack.label, cards: [] });
-      for (let i = 0; i < chords.length; i++) {
-        ws = await workspaceApi.addCard(ws.id!, {
-          chordId: chords[i].id!,
+      // One round-trip: create the board with all its cards attached.
+      const ws = await workspaceApi.create({
+        name: pack.label,
+        cards: chords.map((chord, i) => ({
+          chordId: chord.id!,
+          chordName: chord.name,
           positionX: 40 + (i % perRow) * 230,
           positionY: 40 + Math.floor(i / perRow) * 290,
-        });
-      }
+        })),
+      });
       setWorkspaces((prev) => [...prev, ws]);
       setCurrentWorkspace(ws);
       setSelectedCards(new Set());
