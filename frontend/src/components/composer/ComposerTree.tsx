@@ -44,8 +44,8 @@ interface Props {
   loading: boolean;
   onPickPack: (packId: string) => void;
   onPickWorkspace: (ws: Workspace) => void;
-  /** Library cards grouped by root note, rendered under the "Hljómar" node. */
-  libraryGroups: { root: string; count: number; items: React.ReactNode }[];
+  /** Library grouped by root note; each chord carries its name (for filtering). */
+  libraryGroups: { root: string; chords: { id: number; name: string; node: React.ReactNode }[] }[];
 }
 
 export const ComposerTree: React.FC<Props> = ({
@@ -58,7 +58,25 @@ export const ComposerTree: React.FC<Props> = ({
 }) => {
   const [open, setOpen] = useState<Record<string, boolean>>({ packs: true, workspaces: false, library: true });
   const [active, setActive] = useState('packs');
+  const [query, setQuery] = useState('');
   const rowRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+
+  const q = query.trim().toLowerCase();
+  // While filtering, force the library and any matching group open so results show.
+  const libOpen = q ? true : open.library;
+  const groupOpen = (gkey: string) => (q ? true : !!open[gkey]);
+
+  // Filter chords by name; drop empty groups and recompute counts.
+  const filteredGroups = useMemo(
+    () =>
+      libraryGroups
+        .map((g) => {
+          const chords = q ? g.chords.filter((c) => c.name.toLowerCase().includes(q)) : g.chords;
+          return { root: g.root, count: chords.length, items: chords.map((c) => c.node) };
+        })
+        .filter((g) => g.count > 0),
+    [libraryGroups, q],
+  );
 
   const toggle = (key: string) => setOpen((o) => ({ ...o, [key]: !o[key] }));
   const caret = (k: boolean) => (k ? '▾' : '▸');
@@ -83,13 +101,13 @@ export const ComposerTree: React.FC<Props> = ({
     }
     out.push({ key: 'workspaces', level: 0, role: 'branch', expanded: open.workspaces });
     if (open.workspaces) workspaces.forEach((ws) => out.push({ key: 'ws:' + ws.id, level: 1, role: 'leaf' }));
-    out.push({ key: 'library', level: 0, role: 'branch', expanded: open.library });
-    if (open.library) {
+    out.push({ key: 'library', level: 0, role: 'branch', expanded: libOpen });
+    if (libOpen) {
       // Each root-note group is a keyboard branch; its cards are draggable, not leaves.
-      libraryGroups.forEach((g) => out.push({ key: 'root:' + g.root, level: 1, role: 'branch', expanded: !!open['root:' + g.root] }));
+      filteredGroups.forEach((g) => out.push({ key: 'root:' + g.root, level: 1, role: 'branch', expanded: groupOpen('root:' + g.root) }));
     }
     return out;
-  }, [open, workspaces, libraryGroups]);
+  }, [open, workspaces, filteredGroups, libOpen, q]);
 
   // Keep the roving focus on a row that still exists (e.g. after a collapse).
   const activeKey = rows.some((r) => r.key === active) ? active : rows[0]?.key ?? '';
@@ -139,8 +157,32 @@ export const ComposerTree: React.FC<Props> = ({
   });
 
   return (
-    <ul role="tree" aria-label="Pakkar og vinnusvæði" className="select-none text-sm text-gray-700" onKeyDown={handleKeyDown}>
-      {/* Ready-made packs */}
+    <div className="space-y-2">
+      {/* Filter the chord library */}
+      <div className="relative">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Sía hljóma…"
+          aria-label="Sía hljóma"
+          className="w-full rounded border border-gray-300 py-1.5 pl-7 pr-7 text-sm"
+        />
+        <span aria-hidden="true" className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">⌕</span>
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery('')}
+            aria-label="Hreinsa síu"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded px-1 text-gray-400 hover:text-gray-700"
+          >
+            ×
+          </button>
+        )}
+      </div>
+
+      <ul role="tree" aria-label="Pakkar og vinnusvæði" className="select-none text-sm text-gray-700" onKeyDown={handleKeyDown}>
+        {/* Ready-made packs */}
       <li role="treeitem" aria-expanded={open.packs}>
         <button type="button" {...rove('packs')} onClick={() => toggle('packs')} className={`${ROW} font-semibold`}>
           <span className={CARET} aria-hidden="true">{caret(open.packs)}</span>
@@ -221,27 +263,30 @@ export const ComposerTree: React.FC<Props> = ({
         )}
       </li>
 
-      {/* Chord library — the draggable source cards */}
-      <li role="treeitem" aria-expanded={open.library}>
+      {/* Chord library — the draggable source cards, grouped by root note */}
+      <li role="treeitem" aria-expanded={libOpen}>
         <button type="button" {...rove('library')} onClick={() => toggle('library')} className={`${ROW} font-semibold`}>
-          <span className={CARET} aria-hidden="true">{caret(open.library)}</span>
+          <span className={CARET} aria-hidden="true">{caret(libOpen)}</span>
           Hljómar
         </button>
-        {open.library && (
+        {libOpen && (
           <ul role="group" className={CHILDREN}>
-            {libraryGroups.length === 0 && (
-              <li role="none" className="px-2 py-2 text-xs italic text-gray-400">Engir hljómar í safninu</li>
+            {filteredGroups.length === 0 && (
+              <li role="none" className="px-2 py-2 text-xs italic text-gray-400">
+                {q ? `Enginn hljómur passar við „${query.trim()}“` : 'Engir hljómar í safninu'}
+              </li>
             )}
-            {libraryGroups.map((g) => {
+            {filteredGroups.map((g) => {
               const gkey = 'root:' + g.root;
+              const gopen = groupOpen(gkey);
               return (
-                <li role="treeitem" aria-expanded={!!open[gkey]} key={g.root}>
+                <li role="treeitem" aria-expanded={gopen} key={g.root}>
                   <button type="button" {...rove(gkey)} onClick={() => toggle(gkey)} className={ROW}>
-                    <span className={CARET} aria-hidden="true">{caret(!!open[gkey])}</span>
+                    <span className={CARET} aria-hidden="true">{caret(gopen)}</span>
                     {g.root}
                     <span className="ml-1 text-xs font-normal text-gray-400">({g.count})</span>
                   </button>
-                  {open[gkey] && (
+                  {gopen && (
                     <ul role="group" className={CHILDREN}>
                       <li role="none">
                         <div className="space-y-2 py-2 pr-1">{g.items}</div>
@@ -254,6 +299,7 @@ export const ComposerTree: React.FC<Props> = ({
           </ul>
         )}
       </li>
-    </ul>
+      </ul>
+    </div>
   );
 };

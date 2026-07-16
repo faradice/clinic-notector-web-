@@ -280,10 +280,11 @@ export const ComposerCanvas: React.FC = () => {
       .sort((a, b) => (ROOT_PC[a] ?? 99) - (ROOT_PC[b] ?? 99) || a.localeCompare(b))
       .map((root) => ({
         root,
-        count: byRoot.get(root)!.length,
-        items: byRoot.get(root)!.map((chord) => (
-          <LibraryChordItem key={`library-${chord.id}`} chord={chord} />
-        )),
+        chords: byRoot.get(root)!.map((chord) => ({
+          id: chord.id!,
+          name: chord.name,
+          node: <LibraryChordItem key={`library-${chord.id}`} chord={chord} />,
+        })),
       }));
   }, [sortedLibrary]);
 
