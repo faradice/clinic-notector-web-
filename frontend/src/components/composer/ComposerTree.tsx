@@ -25,6 +25,8 @@ function buildPackTree(): PackNode[] {
       nodes.push({ kind: 'pack', id: p.id, label: p.label });
     }
   }
+  // Show packs alphabetically (groups keep their original child order).
+  nodes.sort((a, b) => a.label.localeCompare(b.label, 'is', { numeric: true }));
   return nodes;
 }
 
