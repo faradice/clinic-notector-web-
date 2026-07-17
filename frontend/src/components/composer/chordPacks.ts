@@ -121,6 +121,27 @@ export const CHORD_PACKS: ChordPack[] = [
       { name: 'G7(#5)', shape: [3, -1, 3, 4, 4, -1] },
     ],
   },
+  {
+    id: 'jazz-guitar',
+    label: 'Jazz Guitar Chords',
+    chords: [
+      { name: 'Cmaj7', shape: [-1, 3, 2, 0, 0, 0] },
+      { name: 'Gmaj7', shape: [3, 2, 0, 0, 0, 2] },
+      { name: 'Dmaj7', shape: [-1, -1, 0, 2, 2, 2] },
+      { name: 'Amaj7', shape: [-1, 0, 2, 1, 2, 0] },
+      { name: 'Cmaj7 (barre)', shape: [-1, 3, 5, 4, 5, 3] },
+      { name: 'Dm7', shape: [-1, -1, 0, 2, 1, 1] },
+      { name: 'Am7', shape: [-1, 0, 2, 0, 1, 0] },
+      { name: 'Em7', shape: [0, 2, 2, 0, 3, 0] },
+      { name: 'Am7 (barre)', shape: [5, 7, 5, 5, 5, 5] },
+      { name: 'Dm7 (barre)', shape: [-1, 5, 7, 5, 6, 5] },
+      { name: 'C7', shape: [-1, 3, 2, 3, 1, 0] },
+      { name: 'G7', shape: [3, 2, 0, 0, 0, 1] },
+      { name: 'D7', shape: [-1, -1, 0, 2, 1, 2] },
+      { name: 'G7 (barre)', shape: [3, 5, 3, 4, 3, 3] },
+      { name: 'C7 (barre)', shape: [-1, 3, 5, 3, 5, 3] },
+    ],
+  },
 ];
 
 /** Build an (unsaved) library chord from a pack chord, keeping its exact voicing. */

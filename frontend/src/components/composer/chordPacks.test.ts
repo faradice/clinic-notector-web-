@@ -39,6 +39,17 @@ const CHORD_TONES: Record<string, number[]> = {
   Fm7: [5, 8, 0, 3],
   'Dm7(b5)': [2, 5, 8, 0],
   'G7(#5)': [7, 11, 3, 5],
+  // Jazz Guitar Chords pack
+  Gmaj7: [7, 11, 2, 6],
+  Dmaj7: [2, 6, 9, 1],
+  Amaj7: [9, 1, 4, 8],
+  'Cmaj7 (barre)': [0, 4, 7, 11],
+  'Am7 (barre)': [9, 0, 4, 7],
+  'Dm7 (barre)': [2, 5, 9, 0],
+  C7: [0, 4, 7, 10],
+  D7: [2, 6, 9, 0],
+  'G7 (barre)': [7, 11, 2, 5],
+  'C7 (barre)': [0, 4, 7, 10],
 };
 
 describe('chord packs', () => {
