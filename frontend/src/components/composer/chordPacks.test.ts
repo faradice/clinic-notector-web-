@@ -50,6 +50,16 @@ const CHORD_TONES: Record<string, number[]> = {
   D7: [2, 6, 9, 0],
   'G7 (barre)': [7, 11, 2, 5],
   'C7 (barre)': [0, 4, 7, 10],
+  // Open Key of E pack
+  E: [4, 8, 11],
+  'F#m11': [6, 9, 1, 4, 11],
+  'Emaj7/D#': [4, 8, 11, 3],
+  Aadd9: [9, 1, 4, 11],
+  Badd11: [11, 3, 6, 4],
+  // Smooth Flow pack
+  Bm7: [11, 2, 6, 9],
+  Gmaj13: [7, 11, 2, 6, 4],
+  A7: [9, 1, 4, 7],
 };
 
 describe('chord packs', () => {

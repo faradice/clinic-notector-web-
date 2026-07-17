@@ -108,6 +108,22 @@ export const ComposerCanvas: React.FC = () => {
     }
   };
 
+  const handleRenameWorkspace = async () => {
+    if (!currentWorkspace) return;
+    const name = window.prompt('Nýtt heiti vinnusvæðis:', currentWorkspace.name);
+    if (!name || !name.trim() || name.trim() === currentWorkspace.name) return;
+    try {
+      setLoading(true);
+      const updated = await workspaceApi.update(currentWorkspace.id!, { ...currentWorkspace, name: name.trim() });
+      setWorkspaces((prev) => prev.map((w) => (w.id === updated.id ? updated : w)));
+      setCurrentWorkspace(updated);
+    } catch (e) {
+      console.error('Failed to rename workspace:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDeleteWorkspace = async () => {
     if (!currentWorkspace) return;
     if (!window.confirm(`Eyða vinnusvæðinu „${currentWorkspace.name}“? Þetta er ekki hægt að afturkalla.`)) return;
@@ -606,6 +622,15 @@ export const ComposerCanvas: React.FC = () => {
               className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 transition-colors"
             >
               Nýtt vinnusvæði
+            </button>
+
+            <button
+              onClick={handleRenameWorkspace}
+              disabled={!currentWorkspace || loading}
+              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg disabled:opacity-50 transition-colors"
+              title="Endurnefna núverandi vinnusvæði"
+            >
+              Endurnefna
             </button>
 
             <button

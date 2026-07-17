@@ -67,6 +67,12 @@ export const ComposerTree: React.FC<Props> = ({
   const [query, setQuery] = useState('');
   const rowRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
+  // "Mín vinnusvæði" listed alphabetically by name.
+  const sortedWorkspaces = useMemo(
+    () => [...workspaces].sort((a, b) => a.name.localeCompare(b.name, 'is', { numeric: true })),
+    [workspaces],
+  );
+
   const q = query.trim().toLowerCase();
   // While filtering, force the library and any matching group open so results show.
   const libOpen = q ? true : open.library;
@@ -108,7 +114,7 @@ export const ComposerTree: React.FC<Props> = ({
         }
       }
       out.push({ key: 'workspaces', level: 0, role: 'branch', expanded: open.workspaces });
-      if (open.workspaces) workspaces.forEach((ws) => out.push({ key: 'ws:' + ws.id, level: 1, role: 'leaf' }));
+      if (open.workspaces) sortedWorkspaces.forEach((ws) => out.push({ key: 'ws:' + ws.id, level: 1, role: 'leaf' }));
     } else {
       out.push({ key: 'library', level: 0, role: 'branch', expanded: libOpen });
       if (libOpen) {
@@ -117,7 +123,7 @@ export const ComposerTree: React.FC<Props> = ({
       }
     }
     return out;
-  }, [isBoards, open, workspaces, filteredGroups, libOpen, q]);
+  }, [isBoards, open, sortedWorkspaces, filteredGroups, libOpen, q]);
 
   // Keep the roving focus on a row that still exists (e.g. after a collapse).
   const activeKey = rows.some((r) => r.key === active) ? active : rows[0]?.key ?? '';
@@ -231,10 +237,10 @@ export const ComposerTree: React.FC<Props> = ({
           </button>
           {open.workspaces && (
             <ul role="group" className={CHILDREN}>
-              {workspaces.length === 0 && (
+              {sortedWorkspaces.length === 0 && (
                 <li role="none" className="px-2 py-1 text-xs italic text-gray-400">Engin vinnusvæði enn</li>
               )}
-              {workspaces.map((ws) => (
+              {sortedWorkspaces.map((ws) => (
                 <li role="treeitem" aria-selected={ws.id === currentWorkspaceId} key={ws.id}>
                   <button
                     type="button"

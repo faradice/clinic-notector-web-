@@ -142,6 +142,29 @@ export const CHORD_PACKS: ChordPack[] = [
       { name: 'C7 (barre)', shape: [-1, 3, 5, 3, 5, 3] },
     ],
   },
+  {
+    id: 'open-key-of-e',
+    label: 'Open Key of E',
+    // One movable shape (low-E muted, B + high-e ringing open) slid up the neck.
+    chords: [
+      { name: 'E', shape: [0, 2, 2, 1, 0, 0] },
+      { name: 'F#m11', shape: [-1, 4, 4, 2, 0, 0] },
+      { name: 'Emaj7/D#', shape: [-1, 6, 6, 4, 0, 0] },
+      { name: 'Aadd9', shape: [-1, 7, 7, 6, 0, 0] },
+      { name: 'Badd11', shape: [-1, 9, 9, 8, 0, 0] },
+      { name: 'C#m7', shape: [-1, 11, 11, 9, 0, 0] },
+    ],
+  },
+  {
+    id: 'smooth-flow',
+    label: 'Smooth Flow',
+    chords: [
+      { name: 'Bm7', shape: [-1, 2, 4, 2, 3, 2] },
+      { name: 'Gmaj13', shape: [3, -1, 4, 4, 3, 0] },
+      { name: 'Em7', shape: [0, 2, 2, 0, 3, 0] },
+      { name: 'A7', shape: [-1, 0, 2, 0, 2, 0] },
+    ],
+  },
 ];
 
 /** Build an (unsaved) library chord from a pack chord, keeping its exact voicing. */
