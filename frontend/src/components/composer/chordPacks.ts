@@ -167,18 +167,16 @@ export const CHORD_PACKS: ChordPack[] = [
   },
   {
     id: 'geek-in-the-pink',
-    label: 'Geek in the Pink (kapó 1)',
-    // Jason Mraz — easy capo-1 shapes. Put a capo on fret 1 and finger these open
-    // shapes; they sound as the song's real chords (Bbm7 F# D#m C# G# / Bmaj7 F).
-    // Verse/chorus loop: Am7 F Dm C G. Pre-chorus adds Bbmaj7, E.
+    label: 'Geek in the Pink (kapó 6)',
+    // Jason Mraz — all-open-chords beginner version. Capo on fret 6 for the same
+    // key as the record. Verse/chorus loop: Em C Am G D. Pre-chorus turnaround: B7.
     chords: [
-      { name: 'Am7', shape: [-1, 0, 2, 0, 1, 0] },
-      { name: 'F', shape: [-1, -1, 3, 2, 1, 1] },
-      { name: 'Dm', shape: [-1, -1, 0, 2, 3, 1] },
+      { name: 'Em', shape: [0, 2, 2, 0, 0, 0] },
       { name: 'C', shape: [-1, 3, 2, 0, 1, 0] },
+      { name: 'Am', shape: [-1, 0, 2, 2, 1, 0] },
       { name: 'G', shape: [3, 2, 0, 0, 0, 3] },
-      { name: 'Bbmaj7', shape: [-1, 1, 3, 2, 3, 1] },
-      { name: 'E', shape: [0, 2, 2, 1, 0, 0] },
+      { name: 'D', shape: [-1, -1, 0, 2, 3, 2] },
+      { name: 'B7', shape: [-1, 2, 1, 2, 0, 2] },
     ],
   },
 ];
