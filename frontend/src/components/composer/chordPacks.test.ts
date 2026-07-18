@@ -60,7 +60,10 @@ const CHORD_TONES: Record<string, number[]> = {
   Bm7: [11, 2, 6, 9],
   Gmaj13: [7, 11, 2, 6, 4],
   A7: [9, 1, 4, 7],
-  // Geek in the Pink (kapó 6) pack uses Em, C, Am, G, D, B7 — all defined above.
+  // Geek in the Pink — (kapó 6) uses Em C Am G D B7 (above); (kapó 1) adds these:
+  F: [5, 9, 0],
+  Dm: [2, 5, 9],
+  Bbmaj7: [10, 2, 5, 9],
 };
 
 describe('chord packs', () => {
