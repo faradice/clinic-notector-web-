@@ -165,6 +165,21 @@ export const CHORD_PACKS: ChordPack[] = [
       { name: 'A7', shape: [-1, 0, 2, 0, 2, 0] },
     ],
   },
+  {
+    id: 'geek-in-the-pink',
+    label: 'Geek in the Pink',
+    // Jason Mraz — verse/chorus loop (Bbm7 F# D#m C# G#) + pre-chorus (Bmaj7, F).
+    // Sounding chords (no capo); with capo 1 these are the Am7 F Dm C G shapes.
+    chords: [
+      { name: 'Bbm7', shape: [6, -1, 6, 6, 6, -1] },
+      { name: 'F#', shape: [2, 4, 4, 3, 2, 2] },
+      { name: 'D#m', shape: [6, 6, 8, 8, 7, 6] },
+      { name: 'C#', shape: [4, 4, 6, 6, 6, 4] },
+      { name: 'G#', shape: [4, 6, 6, 5, 4, 4] },
+      { name: 'Bmaj7', shape: [2, 2, 4, 3, 4, 2] },
+      { name: 'F', shape: [1, 3, 3, 2, 1, 1] },
+    ],
+  },
 ];
 
 /** Build an (unsaved) library chord from a pack chord, keeping its exact voicing. */

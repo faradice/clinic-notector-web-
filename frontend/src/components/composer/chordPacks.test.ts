@@ -60,6 +60,13 @@ const CHORD_TONES: Record<string, number[]> = {
   Bm7: [11, 2, 6, 9],
   Gmaj13: [7, 11, 2, 6, 4],
   A7: [9, 1, 4, 7],
+  // Geek in the Pink pack
+  Bbm7: [10, 1, 5, 8],
+  'F#': [6, 10, 1],
+  'D#m': [3, 6, 10],
+  'C#': [1, 5, 8],
+  'G#': [8, 0, 3],
+  F: [5, 9, 0],
 };
 
 describe('chord packs', () => {
