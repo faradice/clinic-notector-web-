@@ -25,8 +25,19 @@ export const MiniChordViewer: React.FC<MiniChordViewerProps> = ({
   const minFret = fretted.length ? Math.min(...fretted) : 1;
   const baseFret = maxFret > NUM_FRETS ? minFret : 1;
 
+  // Fixed content coordinate space so the whole fretboard (+ "Nfr" marker) always
+  // fits — the width/height props just scale it, nothing gets clipped on the right.
+  const viewW = MARGIN_LEFT + FRET_SPACING * NUM_FRETS + 34;
+  const viewH = MARGIN_TOP + STRING_SPACING * (NUM_STRINGS - 1) + 16;
+
   return (
-    <svg width={width} height={height} className="bg-white rounded">
+    <svg
+      width={width}
+      height={height}
+      viewBox={`0 0 ${viewW} ${viewH}`}
+      preserveAspectRatio="xMidYMid meet"
+      className="bg-white rounded"
+    >
       {/* Frets (vertical lines) */}
       {Array.from({ length: NUM_FRETS + 1 }, (_, i) => (
         <line
@@ -101,10 +112,10 @@ export const MiniChordViewer: React.FC<MiniChordViewerProps> = ({
         if (position.fretNumber === 0) return null; // Open strings shown in header
 
         const stringIdx = position.stringNumber - 1;
-        const fretIdx = position.fretNumber - 1;
+        const fretIdx = position.fretNumber - baseFret;
 
-        // Only show if within visible fret range
-        if (fretIdx >= NUM_FRETS) return null;
+        // Only show notes inside the current fret window
+        if (fretIdx < 0 || fretIdx >= NUM_FRETS) return null;
 
         return (
           <g key={`${position.stringNumber}-${position.fretNumber}-${idx}`}>

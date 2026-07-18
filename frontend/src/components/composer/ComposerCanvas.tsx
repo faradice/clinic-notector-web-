@@ -37,7 +37,7 @@ const LibraryChordItem: React.FC<{ chord: Chord }> = ({ chord }) => {
       <div className="font-semibold text-gray-900">{chord.name}</div>
       <div className="text-xs text-gray-500">{chord.rootNote} {chord.chordType}</div>
       <div className="mt-2">
-        <MiniChordViewer positions={chord.fretPositions} width={150} height={120} />
+        <MiniChordViewer positions={chord.fretPositions} width={140} height={100} />
       </div>
     </div>
   );
