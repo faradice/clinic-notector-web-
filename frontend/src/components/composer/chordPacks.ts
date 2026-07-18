@@ -167,17 +167,18 @@ export const CHORD_PACKS: ChordPack[] = [
   },
   {
     id: 'geek-in-the-pink',
-    label: 'Geek in the Pink',
-    // Jason Mraz — verse/chorus loop (Bbm7 F# D#m C# G#) + pre-chorus (Bmaj7, F).
-    // Sounding chords (no capo); with capo 1 these are the Am7 F Dm C G shapes.
+    label: 'Geek in the Pink (kapó 1)',
+    // Jason Mraz — easy capo-1 shapes. Put a capo on fret 1 and finger these open
+    // shapes; they sound as the song's real chords (Bbm7 F# D#m C# G# / Bmaj7 F).
+    // Verse/chorus loop: Am7 F Dm C G. Pre-chorus adds Bbmaj7, E.
     chords: [
-      { name: 'Bbm7', shape: [6, -1, 6, 6, 6, -1] },
-      { name: 'F#', shape: [2, 4, 4, 3, 2, 2] },
-      { name: 'D#m', shape: [6, 6, 8, 8, 7, 6] },
-      { name: 'C#', shape: [4, 4, 6, 6, 6, 4] },
-      { name: 'G#', shape: [4, 6, 6, 5, 4, 4] },
-      { name: 'Bmaj7', shape: [2, 2, 4, 3, 4, 2] },
-      { name: 'F', shape: [1, 3, 3, 2, 1, 1] },
+      { name: 'Am7', shape: [-1, 0, 2, 0, 1, 0] },
+      { name: 'F', shape: [-1, -1, 3, 2, 1, 1] },
+      { name: 'Dm', shape: [-1, -1, 0, 2, 3, 1] },
+      { name: 'C', shape: [-1, 3, 2, 0, 1, 0] },
+      { name: 'G', shape: [3, 2, 0, 0, 0, 3] },
+      { name: 'Bbmaj7', shape: [-1, 1, 3, 2, 3, 1] },
+      { name: 'E', shape: [0, 2, 2, 1, 0, 0] },
     ],
   },
 ];
