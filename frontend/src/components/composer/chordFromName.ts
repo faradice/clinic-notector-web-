@@ -1,5 +1,6 @@
 import type { Chord, ChordFretPosition } from '../../api/chords';
 import { shapeFor } from '../chord-detector/chordShapes';
+import { generateVoicing } from './chordGenerator';
 
 // Generate a library chord straight from its name (v1: looks the name up in the
 // shared chord-shape table). Later this can grow into position/inversion choice
@@ -59,7 +60,8 @@ export function samePositions(a: ChordFretPosition[], b: ChordFretPosition[]): b
 /** Build a Chord (unsaved) from a chord name, or null if we have no shape for it. */
 export function chordFromName(input: string): Omit<Chord, 'id'> | null {
   const name = normalizeChordName(input);
-  const frets = shapeFor(name);
+  // Curated open/common voicing first, else generate a movable barre shape.
+  const frets = shapeFor(name) ?? generateVoicing(name);
   if (!frets) return null;
   const { rootNote, chordType } = parseRootAndType(name);
   return { name, rootNote, chordType, fretPositions: shapeToFretPositions(frets) };

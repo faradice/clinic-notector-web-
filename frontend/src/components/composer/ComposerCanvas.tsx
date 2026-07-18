@@ -568,7 +568,7 @@ export const ComposerCanvas: React.FC = () => {
                 value={newChordName}
                 onChange={(e) => { setNewChordName(e.target.value); setAddChordError(null); }}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleAddChord(); }}
-                placeholder="t.d. C, Am, G7"
+                placeholder="t.d. C, F#m7, Bbmaj7, C9"
                 className="flex-1 min-w-0 px-2 py-1.5 border border-gray-300 rounded text-sm"
               />
               <button
