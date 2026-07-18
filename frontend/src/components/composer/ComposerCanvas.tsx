@@ -313,6 +313,15 @@ export const ComposerCanvas: React.FC = () => {
     if (prog) setBars(prog.degrees.length);
   }, [progOptions, progIdx]);
 
+  // Find an existing board with the same name and the same set of chords, so a
+  // repeated "Búa til borð" opens it instead of piling up identical copies.
+  const findExistingBoard = (name: string, chordNames: string[]): Workspace | undefined => {
+    const want = [...chordNames].sort().join(' ');
+    return workspaces.find(
+      (w) => w.name === name && [...(w.cards ?? [])].map((c) => c.chordName).sort().join(' ') === want,
+    );
+  };
+
   const handleGenerateBoard = async () => {
     const key = KEYS[keyIdx];
     const prog = progOptions[progIdx] ?? progOptions[0];
@@ -320,6 +329,14 @@ export const ComposerCanvas: React.FC = () => {
     if (names.length === 0) return;
     // One chord per bar, cycling the progression to fill the requested bars.
     const barNames = Array.from({ length: bars }, (_, i) => names[i % names.length]);
+    const boardName = `${key.label} · ${prog.label} · ${bars} taktar`;
+    // Already have this exact board? Open it instead of making a duplicate.
+    const existing = findExistingBoard(boardName, barNames);
+    if (existing) {
+      setCurrentWorkspace(existing);
+      setSelectedCards(new Set());
+      return;
+    }
     try {
       setLoading(true);
       // Ensure each unique chord exists in the library (self-heal legacy voicings).
@@ -355,7 +372,7 @@ export const ComposerCanvas: React.FC = () => {
         })
         .filter((c): c is NonNullable<typeof c> => c !== null);
       const ws = await workspaceApi.create({
-        name: `${key.label} · ${prog.label} · ${bars} taktar`,
+        name: boardName,
         cards,
       });
       setWorkspaces((prev) => [...prev, ws]);
@@ -372,6 +389,13 @@ export const ComposerCanvas: React.FC = () => {
   // of the pack's chords that are missing to the library (with the pack's exact voicing).
   const handleGeneratePack = async (packId: string) => {
     const pack = CHORD_PACKS.find((p) => p.id === packId) ?? CHORD_PACKS[0];
+    // Already have this exact board? Open it instead of making a duplicate.
+    const existing = findExistingBoard(pack.label, pack.chords.map((c) => c.name));
+    if (existing) {
+      setCurrentWorkspace(existing);
+      setSelectedCards(new Set());
+      return;
+    }
     try {
       setLoading(true);
       let library = chordLibrary;
