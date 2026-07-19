@@ -253,6 +253,9 @@ export const ComposerCanvas: React.FC = () => {
 
   const handleContextMenu = (cardId: number, e: React.MouseEvent) => {
     e.preventDefault();
+    // Right-clicking a card that isn't part of the selection selects just it, so
+    // the menu's actions apply to what was clicked.
+    setSelectedCards((prev) => (prev.has(cardId) ? prev : new Set([cardId])));
     setContextMenu({ x: e.clientX, y: e.clientY, cardId });
   };
 
@@ -269,6 +272,33 @@ export const ComposerCanvas: React.FC = () => {
       setContextMenu(null);
     } catch (e) {
       console.error('Failed to delete cards:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDuplicateSelected = async () => {
+    if (!currentWorkspace || selectedCards.size === 0) return;
+    try {
+      setLoading(true);
+      const originalIds = new Set(currentWorkspace.cards.map((c) => c.id));
+      let updated = currentWorkspace;
+      for (const cardId of selectedCards) {
+        const card = currentWorkspace.cards.find((c) => c.id === cardId);
+        if (!card) continue;
+        updated = await workspaceApi.addCard(currentWorkspace.id!, {
+          chordId: card.chordId,
+          positionX: card.positionX + 24,
+          positionY: card.positionY + 24,
+        });
+      }
+      setCurrentWorkspace(updated);
+      // Select the fresh copies so they can be dragged straight away.
+      const copies = updated.cards.filter((c) => !originalIds.has(c.id)).map((c) => c.id!);
+      setSelectedCards(new Set(copies));
+      setContextMenu(null);
+    } catch (e) {
+      console.error('Failed to duplicate cards:', e);
     } finally {
       setLoading(false);
     }
@@ -666,6 +696,14 @@ export const ComposerCanvas: React.FC = () => {
               Eyða vinnusvæði
             </button>
             <button
+              onClick={handleDuplicateSelected}
+              disabled={selectedCards.size === 0 || loading}
+              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 transition-colors"
+              title="Afrita valin spjöld í þessu vinnusvæði"
+            >
+              Afrita valda ({selectedCards.size})
+            </button>
+            <button
               onClick={handleDeleteSelected}
               disabled={selectedCards.size === 0 || loading}
               className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg disabled:opacity-50 transition-colors"
@@ -742,6 +780,12 @@ export const ComposerCanvas: React.FC = () => {
             style={{ left: contextMenu.x, top: contextMenu.y }}
             onClick={() => setContextMenu(null)}
           >
+            <button
+              onClick={handleDuplicateSelected}
+              className="w-full px-4 py-2 text-left hover:bg-gray-100 text-gray-800"
+            >
+              Afrita
+            </button>
             <button
               onClick={handleDeleteSelected}
               className="w-full px-4 py-2 text-left hover:bg-gray-100 text-red-600"
