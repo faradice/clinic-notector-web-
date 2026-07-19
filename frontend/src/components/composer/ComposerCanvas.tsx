@@ -776,7 +776,7 @@ export const ComposerCanvas: React.FC = () => {
         {/* Context Menu */}
         {contextMenu && (
           <div
-            className="fixed bg-white border border-gray-300 rounded-lg shadow-lg py-1 z-50"
+            className="fixed bg-white border border-gray-300 rounded-lg shadow-lg py-1 z-[2000]"
             style={{ left: contextMenu.x, top: contextMenu.y }}
             onClick={() => setContextMenu(null)}
           >
