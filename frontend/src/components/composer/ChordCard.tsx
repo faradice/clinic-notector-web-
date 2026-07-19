@@ -11,6 +11,8 @@ interface ChordCardProps {
   isSelected?: boolean;
   isPlaying?: boolean;
   scale?: number;
+  beats?: number;
+  onBeatsChange?: (beats: number) => void;
   onClick?: (e: React.MouseEvent) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
 }
@@ -22,6 +24,8 @@ export const ChordCard: React.FC<ChordCardProps> = ({
   isSelected = false,
   isPlaying = false,
   scale = 1,
+  beats = 1,
+  onBeatsChange,
   onClick,
   onContextMenu,
 }) => {
@@ -103,6 +107,36 @@ export const ChordCard: React.FC<ChordCardProps> = ({
 
         <div className="text-xs text-gray-500 text-center">
           {chord.rootNote} {chord.chordType}
+        </div>
+
+        {/* Duration in beats — the mark you set/change per chord. */}
+        <div
+          className="flex items-center justify-center gap-1.5 border-t border-gray-100 pt-2"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          title="Lengd hljóms í slögum (4 = heill taktur)"
+        >
+          <button
+            type="button"
+            onClick={() => onBeatsChange?.(Math.max(1, beats - 1))}
+            disabled={beats <= 1}
+            className="flex h-6 w-6 items-center justify-center rounded border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-40"
+            aria-label="Fækka slögum"
+          >
+            −
+          </button>
+          <span className="min-w-[3.5rem] text-center text-sm tabular-nums text-gray-700">
+            {beats} <span className="text-gray-400">slög</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => onBeatsChange?.(Math.min(16, beats + 1))}
+            disabled={beats >= 16}
+            className="flex h-6 w-6 items-center justify-center rounded border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-40"
+            aria-label="Fjölga slögum"
+          >
+            +
+          </button>
         </div>
       </div>
     </div>

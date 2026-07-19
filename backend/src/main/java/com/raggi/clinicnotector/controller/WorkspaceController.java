@@ -55,6 +55,7 @@ public class WorkspaceController {
                         .chord(chord)
                         .positionX(cardDTO.getPositionX())
                         .positionY(cardDTO.getPositionY())
+                        .beats(cardDTO.getBeats() != null ? cardDTO.getBeats() : 1)
                         .build());
             }
         }
@@ -101,6 +102,7 @@ public class WorkspaceController {
                             .chord(chord)
                             .positionX(request.getPositionX())
                             .positionY(request.getPositionY())
+                            .beats(request.getBeats() != null ? request.getBeats() : 1)
                             .build();
 
                     workspace.getCards().add(card);
@@ -128,6 +130,29 @@ public class WorkspaceController {
                                 card.setPositionX(request.getPositionX());
                                 card.setPositionY(request.getPositionY());
                             });
+
+                    Workspace savedWorkspace = workspaceRepository.save(workspace);
+                    return ResponseEntity.ok(workspaceMapper.toDTO(savedWorkspace));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Update how many beats a chord card lasts
+     */
+    @PutMapping("/{workspaceId}/cards/{cardId}/beats")
+    public ResponseEntity<WorkspaceDTO> updateCardBeats(
+            @PathVariable Long workspaceId,
+            @PathVariable Long cardId,
+            @RequestBody BeatsRequest request) {
+
+        return workspaceRepository.findById(workspaceId)
+                .map(workspace -> {
+                    workspace.getCards().stream()
+                            .filter(card -> card.getId().equals(cardId))
+                            .findFirst()
+                            .ifPresent(card -> card.setBeats(
+                                    request.getBeats() != null && request.getBeats() > 0 ? request.getBeats() : 1));
 
                     Workspace savedWorkspace = workspaceRepository.save(workspace);
                     return ResponseEntity.ok(workspaceMapper.toDTO(savedWorkspace));
@@ -183,6 +208,7 @@ public class WorkspaceController {
         private Long chordId;
         private Integer positionX;
         private Integer positionY;
+        private Integer beats;
 
         public Long getChordId() { return chordId; }
         public void setChordId(Long chordId) { this.chordId = chordId; }
@@ -190,6 +216,15 @@ public class WorkspaceController {
         public void setPositionX(Integer positionX) { this.positionX = positionX; }
         public Integer getPositionY() { return positionY; }
         public void setPositionY(Integer positionY) { this.positionY = positionY; }
+        public Integer getBeats() { return beats; }
+        public void setBeats(Integer beats) { this.beats = beats; }
+    }
+
+    public static class BeatsRequest {
+        private Integer beats;
+
+        public Integer getBeats() { return beats; }
+        public void setBeats(Integer beats) { this.beats = beats; }
     }
 
     public static class UpdatePositionRequest {

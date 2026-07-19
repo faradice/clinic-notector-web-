@@ -34,6 +34,9 @@ public class WorkspaceCard {
     @Column(name = "position_y", nullable = false)
     private Integer positionY = 0;
 
+    @Column(name = "beats", nullable = false)
+    private Integer beats = 1;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

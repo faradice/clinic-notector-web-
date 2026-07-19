@@ -290,6 +290,7 @@ export const ComposerCanvas: React.FC = () => {
           chordId: card.chordId,
           positionX: card.positionX + 24,
           positionY: card.positionY + 24,
+          beats: card.beats ?? 1,
         });
       }
       setCurrentWorkspace(updated);
@@ -301,6 +302,16 @@ export const ComposerCanvas: React.FC = () => {
       console.error('Failed to duplicate cards:', e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSetCardBeats = async (cardId: number, beats: number) => {
+    if (!currentWorkspace) return;
+    try {
+      const updated = await workspaceApi.updateCardBeats(currentWorkspace.id!, cardId, beats);
+      setCurrentWorkspace(updated);
+    } catch (e) {
+      console.error('Failed to set card beats:', e);
     }
   };
 
@@ -479,22 +490,30 @@ export const ComposerCanvas: React.FC = () => {
       if (Math.abs(a.positionY - b.positionY) > 40) return a.positionY - b.positionY;
       return a.positionX - b.positionX;
     });
+    const msPerBeat = Math.round(60000 / playBpm);
+    // Each chord holds for its own beats; accumulate start offsets down the line.
+    let offset = 0;
     const steps = ordered
-      .map((c) => ({ cardId: c.id, positions: getChordForCard(c)?.fretPositions }))
-      .filter((s): s is { cardId: number; positions: ChordFretPosition[] } =>
-        s.cardId != null && !!s.positions && s.positions.length > 0);
+      .map((c) => ({ cardId: c.id, positions: getChordForCard(c)?.fretPositions, beats: c.beats ?? 1 }))
+      .filter((s): s is { cardId: number; positions: ChordFretPosition[]; beats: number } =>
+        s.cardId != null && !!s.positions && s.positions.length > 0)
+      .map((s) => {
+        const start = offset;
+        offset += Math.max(1, s.beats) * msPerBeat;
+        return { ...s, start };
+      });
     if (steps.length === 0) return;
+    const total = offset;
 
     stopProgression();
     setIsPlaying(true);
-    const msPerChord = Math.round(60000 / playBpm); // one chord per beat
 
     const schedulePass = () => {
-      steps.forEach((step, i) => {
+      steps.forEach((step) => {
         playTimeoutsRef.current.push(setTimeout(() => {
           playChord(step.positions);
           setPlayingCardId(step.cardId);
-        }, i * msPerChord));
+        }, step.start));
       });
       // At the end of the pass, loop or finish (loopRef so toggling mid-play works).
       playTimeoutsRef.current.push(setTimeout(() => {
@@ -504,7 +523,7 @@ export const ComposerCanvas: React.FC = () => {
           setIsPlaying(false);
           setPlayingCardId(null);
         }
-      }, steps.length * msPerChord));
+      }, total));
     };
     schedulePass();
   };
@@ -750,6 +769,8 @@ export const ComposerCanvas: React.FC = () => {
                     isSelected={selectedCards.has(card.id!)}
                     isPlaying={playingCardId === card.id}
                     scale={cardScale}
+                    beats={card.beats ?? 1}
+                    onBeatsChange={(b) => handleSetCardBeats(card.id!, b)}
                     onClick={(e) => handleCardClick(card.id!, e)}
                     onContextMenu={(e) => handleContextMenu(card.id!, e)}
                   />

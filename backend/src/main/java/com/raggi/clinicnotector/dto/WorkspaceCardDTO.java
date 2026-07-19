@@ -15,4 +15,5 @@ public class WorkspaceCardDTO {
     private String chordName; // For display purposes
     private Integer positionX;
     private Integer positionY;
+    private Integer beats; // How long the chord lasts, in beats (default 1)
 }

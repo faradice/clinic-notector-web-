@@ -6,6 +6,7 @@ export type WorkspaceCard = {
   chordName: string;
   positionX: number;
   positionY: number;
+  beats?: number; // how long the chord lasts, in beats (default 1)
 };
 
 export type Workspace = {
@@ -21,6 +22,7 @@ export type AddCardRequest = {
   chordId: number;
   positionX: number;
   positionY: number;
+  beats?: number;
 };
 
 export type UpdatePositionRequest = {
@@ -82,6 +84,18 @@ export const workspaceApi = {
   removeCard: async (workspaceId: number, cardId: number): Promise<Workspace> => {
     const response = await apiClient.delete<Workspace>(
       `/workspaces/${workspaceId}/cards/${cardId}`
+    );
+    return response.data;
+  },
+
+  updateCardBeats: async (
+    workspaceId: number,
+    cardId: number,
+    beats: number
+  ): Promise<Workspace> => {
+    const response = await apiClient.put<Workspace>(
+      `/workspaces/${workspaceId}/cards/${cardId}/beats`,
+      { beats }
     );
     return response.data;
   },

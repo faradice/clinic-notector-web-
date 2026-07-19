@@ -47,6 +47,7 @@ public class WorkspaceMapper {
                 .chordName(card.getChord().getName())
                 .positionX(card.getPositionX())
                 .positionY(card.getPositionY())
+                .beats(card.getBeats() != null ? card.getBeats() : 1)
                 .build();
     }
 }
