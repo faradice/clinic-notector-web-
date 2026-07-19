@@ -182,18 +182,20 @@ export const CHORD_PACKS: ChordPack[] = [
   {
     id: 'geek-in-the-pink-nocapo',
     label: 'Geek in the Pink (án kapó)',
-    // Jason Mraz — full no-capo version (barre voicings up the neck, as played).
-    // Verse/chorus: Bbm7 F# D#m C# G#. Pre-chorus: Bbm7 F# D#m Bmaj7 F. Plus Bbm, A.
+    // Jason Mraz — accurate full no-capo version (flat spellings + slash chords).
+    // Intro: Bbm Gb Ebm Ebm7/C F/A. Verse: Bbm Gb Ebm7 Db Ab. Bridge adds Fm, Ab/C.
     chords: [
-      { name: 'Bbm7', shape: [6, -1, 6, 6, 6, -1] },
-      { name: 'F#', shape: [2, 4, 4, 3, 2, 2] },
-      { name: 'D#m', shape: [6, 6, 8, 8, 7, 6] },
-      { name: 'C#', shape: [4, 4, 6, 6, 6, 4] },
-      { name: 'G#', shape: [4, 6, 6, 5, 4, 4] },
-      { name: 'Bmaj7', shape: [2, 2, 4, 3, 4, 2] },
+      { name: 'Bbm', shape: [6, 8, 8, 6, 6, 6] },
+      { name: 'Gb', shape: [2, 4, 4, 3, 2, 2] },
+      { name: 'Ebm', shape: [-1, -1, 1, 3, 4, 2] },
+      { name: 'Ebm7/C', shape: [-1, 3, 4, 3, 4, -1] },
+      { name: 'F/A', shape: [-1, 0, 3, 2, 1, 1] },
+      { name: 'Ebm7', shape: [-1, -1, 1, 3, 2, 2] },
+      { name: 'Db', shape: [-1, 4, 6, 6, 6, 4] },
+      { name: 'Ab', shape: [4, 6, 6, 5, 4, 4] },
       { name: 'F', shape: [1, 3, 3, 2, 1, 1] },
-      { name: 'Bbm', shape: [1, 1, 3, 3, 2, 1] },
-      { name: 'A', shape: [5, 7, 7, 6, 5, 5] },
+      { name: 'Fm', shape: [1, 3, 3, 1, 1, 1] },
+      { name: 'Ab/C', shape: [-1, 3, 6, 5, 4, 4] },
     ],
   },
   {
