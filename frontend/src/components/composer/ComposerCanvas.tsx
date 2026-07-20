@@ -510,10 +510,14 @@ export const ComposerCanvas: React.FC = () => {
 
     const schedulePass = () => {
       steps.forEach((step) => {
-        playTimeoutsRef.current.push(setTimeout(() => {
-          playChord(step.positions);
-          setPlayingCardId(step.cardId);
-        }, step.start));
+        // Re-strum on every beat the chord lasts, so a long chord keeps a steady
+        // pulse instead of one strum followed by a long silence.
+        for (let b = 0; b < step.beats; b++) {
+          playTimeoutsRef.current.push(setTimeout(() => {
+            playChord(step.positions);
+            if (b === 0) setPlayingCardId(step.cardId);
+          }, step.start + b * msPerBeat));
+        }
       });
       // At the end of the pass, loop or finish (loopRef so toggling mid-play works).
       playTimeoutsRef.current.push(setTimeout(() => {
