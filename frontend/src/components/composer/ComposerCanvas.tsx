@@ -51,6 +51,7 @@ export const ComposerCanvas: React.FC = () => {
   const [draggedChord, setDraggedChord] = useState<Chord | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; cardId: number } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [newChordName, setNewChordName] = useState('');
   const [addChordError, setAddChordError] = useState<string | null>(null);
   const [cardScale, setCardScale] = useState(0.7); // canvas card zoom
@@ -302,6 +303,27 @@ export const ComposerCanvas: React.FC = () => {
       console.error('Failed to duplicate cards:', e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Explicit "save the whole workbook": re-persist every card's position in one
+  // batch (moves/beats also auto-save on change; this is a safety net + confirmation).
+  const handleSaveWorkspace = async () => {
+    if (!currentWorkspace || (currentWorkspace.cards.length === 0)) return;
+    try {
+      setSaveState('saving');
+      const updates: CardPositionUpdate[] = currentWorkspace.cards.map((c) => ({
+        cardId: c.id!,
+        positionX: c.positionX,
+        positionY: c.positionY,
+      }));
+      const updated = await workspaceApi.updateCardPositions(currentWorkspace.id!, updates);
+      setCurrentWorkspace(updated);
+      setSaveState('saved');
+      window.setTimeout(() => setSaveState('idle'), 2000);
+    } catch (e) {
+      console.error('Failed to save workspace:', e);
+      setSaveState('idle');
     }
   };
 
@@ -666,6 +688,17 @@ export const ComposerCanvas: React.FC = () => {
               title="Spila hljómana í röð"
             >
               {isPlaying ? '■ Stöðva' : '▶ Spila'}
+            </button>
+
+            <button
+              onClick={handleSaveWorkspace}
+              disabled={!currentWorkspace || (currentWorkspace?.cards.length ?? 0) === 0 || saveState === 'saving'}
+              className={`px-4 py-2 rounded-lg text-white transition-colors disabled:opacity-50 ${
+                saveState === 'saved' ? 'bg-emerald-600' : 'bg-blue-500 hover:bg-blue-600'
+              }`}
+              title="Vista alla vinnubókina (staðsetningar og lengdir)"
+            >
+              {saveState === 'saving' ? 'Vistar…' : saveState === 'saved' ? 'Vistað ✓' : '💾 Vista'}
             </button>
 
             <div className="flex items-center gap-1">
