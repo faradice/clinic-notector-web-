@@ -3,6 +3,7 @@ import { useTuner } from '../../hooks/useTuner';
 import { useMetronome } from '../../hooks/useMetronome';
 import { customBarApi, type CustomBar } from '../../api/customBars';
 import { LESSON_PATH, DEFAULT_LESSON_ID, lessonById, buildRound } from './lessonPath';
+import { NotectorTree } from './NotectorTree';
 
 // Basic notes for highest 3 guitar strings practice
 const BASIC_NOTES = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4'];
@@ -639,9 +640,27 @@ export const NotectorGame: React.FC = () => {
         {gameState === 'idle' && notes.length === 0 ? (
           <div className="text-center max-h-full overflow-y-auto w-full py-6">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">Nótnaþjálfun</h2>
-            <p className="text-xl text-gray-600 mb-8">
-              Æfðu nóturnar C, D, E, F, G, A, B á efstu 3 strengjunum
+            <p className="text-xl text-gray-600 mb-6">
+              Byrjaðu á tveimur nótum og bættu einni við í einu
             </p>
+
+            {/* The path itself: pick what you are learning, and practise a saved bar from under it.
+                The compact "Nótur" selector in the toolbar does the same thing while playing; this is
+                the place to see the whole ladder and what sits under each step. */}
+            <div className="max-w-2xl mx-auto text-left mb-8 p-4 bg-white rounded-lg border border-gray-300">
+              <div className="font-semibold text-gray-900 mb-2">Hvað ertu að læra?</div>
+              <NotectorTree
+                lessonId={lessonId}
+                onSelectLesson={setLessonId}
+                bars={savedBars}
+                selectedBarId={barSource}
+                onSelectBar={(id) => {
+                  // Practising a specific bar means looping exactly that bar — that is Muscle Memory.
+                  setLevel('muscle');
+                  selectBarSource(id);
+                }}
+              />
+            </div>
 
             {level === 'muscle' ? (
               <div className="max-w-2xl mx-auto text-left space-y-5">

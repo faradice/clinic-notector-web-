@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   DEFAULT_LESSON_ID,
   LESSON_PATH,
+  barFitsLesson,
   buildRound,
   drawNote,
   lessonById,
@@ -81,6 +82,28 @@ describe('drawNote', () => {
     // ~50% by design; a wide band keeps this from being a flaky statistical test.
     expect(hits).toBeGreaterThan(600);
     expect(hits).toBeLessThan(1400);
+  });
+});
+
+describe('barFitsLesson', () => {
+  it('accepts a bar whose notes the lesson has taught', () => {
+    expect(barFitsLesson(lessonById('c-g'), ['C4', 'G4', 'C4'])).toBe(true);
+  });
+
+  it('rejects a bar using a note the lesson has not reached', () => {
+    expect(barFitsLesson(lessonById('c-g'), ['C4', 'E4'])).toBe(false);
+    expect(barFitsLesson(lessonById('plus-d-f'), ['C4', 'A4'])).toBe(false);
+  });
+
+  it('still accepts an early bar at a later lesson', () => {
+    // Notes stay known, so a C/G bar remains practisable all the way up the ladder.
+    for (const node of LESSON_PATH) {
+      expect(barFitsLesson(node, ['C4', 'G4'])).toBe(true);
+    }
+  });
+
+  it('rejects an empty bar — there is nothing to practise', () => {
+    expect(barFitsLesson(lessonById('plus-a-b'), [])).toBe(false);
   });
 });
 

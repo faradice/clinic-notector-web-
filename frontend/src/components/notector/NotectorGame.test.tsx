@@ -99,6 +99,33 @@ describe('NotectorGame — answer mode toggle', () => {
   })
 })
 
+describe('NotectorGame — the lesson path', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  // A lesson's own row: anchored so it can't match the "Opna …"/"Loka …" expand toggle beside it,
+  // nor the root treeitem (whose accessible name includes every descendant's text).
+  const lessonRow = (name: RegExp) =>
+    screen.getByRole('button', { name }).closest('[role="treeitem"]')
+
+  it('shows the ladder on the idle screen, starting on C og G', () => {
+    render(<NotectorGame />)
+    expect(screen.getByRole('tree', { name: 'Nótnaleið' })).toBeInTheDocument()
+    // The first lesson is the one being practised, so the tree marks it selected.
+    expect(lessonRow(/^C og G/)).toHaveAttribute('aria-selected', 'true')
+    expect(lessonRow(/^\+ A og B/)).toHaveAttribute('aria-selected', 'false')
+  })
+
+  it('picking a lesson in the tree changes which notes the round draws from', () => {
+    render(<NotectorGame />)
+    // The toolbar selector mirrors the tree — both drive the same lessonId.
+    const picker = screen.getByRole('combobox', { name: 'Hvaða nótur á að æfa' })
+    expect(picker).toHaveValue('c-g')
+    fireEvent.click(screen.getByRole('button', { name: /^\+ D og F/ }))
+    expect(picker).toHaveValue('plus-d-f')
+    expect(lessonRow(/^\+ D og F/)).toHaveAttribute('aria-selected', 'true')
+  })
+})
+
 describe('NotectorGame — Muscle Memory mode', () => {
   afterEach(() => vi.restoreAllMocks())
 

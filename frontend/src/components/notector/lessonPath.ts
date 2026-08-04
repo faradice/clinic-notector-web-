@@ -80,6 +80,17 @@ export function drawNote(node: LessonNode, rng: Rng = Math.random): string {
 }
 
 /**
+ * Can this bar be practised at this lesson? True when every note in it is one the lesson has taught.
+ *
+ * This is what lets saved bars hang under a lesson in the tree without storing a lesson id on them: a
+ * bar of C and G notes belongs under "C og G" and under every later lesson too, because those notes are
+ * still known. A bar containing A cannot appear under "C og G" — the student has not met A yet.
+ */
+export function barFitsLesson(node: LessonNode, barNotes: string[]): boolean {
+  return barNotes.length > 0 && barNotes.every((n) => node.notes.includes(n));
+}
+
+/**
  * Build a round of `count` notes for a lesson.
  *
  * `carryOver` are notes missed in the previous round that should come back; they are kept only if the
