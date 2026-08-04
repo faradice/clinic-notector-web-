@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTuner } from '../../hooks/useTuner';
 import { useMetronome } from '../../hooks/useMetronome';
 import { customBarApi, type CustomBar } from '../../api/customBars';
+import { LESSON_PATH, DEFAULT_LESSON_ID, lessonById, buildRound } from './lessonPath';
 
 // Basic notes for highest 3 guitar strings practice
 const BASIC_NOTES = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4'];
@@ -67,6 +68,8 @@ interface NoteState {
 export const NotectorGame: React.FC = () => {
   const [gameState, setGameState] = useState<'idle' | 'playing'>('idle');
   const [level, setLevel] = useState<DifficultyLevel>('beginner');
+  // Which lesson on the note-reading ladder we are practising (C+G -> +E -> +D/F -> +A/B).
+  const [lessonId, setLessonId] = useState<string>(DEFAULT_LESSON_ID);
   const [notes, setNotes] = useState<NoteState[]>([]);
   const [currentNoteIndex, setCurrentNoteIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -118,6 +121,7 @@ export const NotectorGame: React.FC = () => {
   useMetronome(bpm, gameState === 'playing', tickVolume);
 
   const levelConfig = LEVELS[level];
+  const lesson = lessonById(lessonId);
 
   // Keep refs in sync with state for use inside timeout callbacks.
   useEffect(() => {
@@ -182,22 +186,12 @@ export const NotectorGame: React.FC = () => {
       // Beginner / Muscle Memory: reuse the exact same sequence, same order
       notesToUse = [...currentSequenceRef.current];
     } else {
-      // Generate new sequence
-      if (!levelConfig.repeatUntilPerfect && !levelConfig.fixedBar) {
-        // Include failed notes from previous round
-        notesToUse = [...failedNotes];
-      } else {
-        notesToUse = [];
-      }
-
-      // Add random notes to reach target count
-      while (notesToUse.length < levelConfig.noteCount) {
-        const randomNote = BASIC_NOTES[Math.floor(Math.random() * BASIC_NOTES.length)];
-        notesToUse.push(randomNote);
-      }
-
-      // Shuffle
-      notesToUse = notesToUse.sort(() => Math.random() - 0.5).slice(0, levelConfig.noteCount);
+      // Draw from the CURRENT LESSON only, so a beginner meets two notes rather than all seven, and
+      // weight whatever that lesson just introduced (see lessonPath.ts). Missed notes come back, but
+      // only if the lesson still contains them.
+      const carryOver =
+        !levelConfig.repeatUntilPerfect && !levelConfig.fixedBar ? failedNotes : [];
+      notesToUse = buildRound(lesson, levelConfig.noteCount, carryOver);
 
       // Remember the sequence for modes that replay the same bar
       if (levelConfig.repeatUntilPerfect || levelConfig.fixedBar) {
@@ -215,7 +209,7 @@ export const NotectorGame: React.FC = () => {
     });
 
     return newNotes;
-  }, [levelConfig, failedNotes]);
+  }, [levelConfig, failedNotes, lesson]);
 
   const startGame = useCallback(() => {
     // Muscle Memory: a saved bar stays fixed; "Random" re-rolls a fresh bar each start.
@@ -425,6 +419,34 @@ export const NotectorGame: React.FC = () => {
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Toolbar */}
       <div className="bg-white border-b border-gray-300 p-4 flex items-center gap-6 flex-wrap">
+        {/* Which notes we are learning. This is the pedagogical axis: start on two notes and add one
+            at a time. The "Stig" selector next to it only changes how many notes a round has and
+            whether the bar repeats — it never narrowed the note set. */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-semibold text-gray-700">Nótur:</label>
+          <select
+            value={lessonId}
+            onChange={(e) => setLessonId(e.target.value)}
+            disabled={gameState === 'playing'}
+            aria-label="Hvaða nótur á að æfa"
+            className="px-4 py-2 border border-gray-300 rounded-lg text-base font-semibold"
+          >
+            {LESSON_PATH.map((node) => (
+              <option key={node.id} value={node.id}>
+                {node.name}
+              </option>
+            ))}
+          </select>
+          <span className="text-sm text-gray-500">
+            {lesson.notes.map((n) => n.replace(/[0-9]/g, '')).join(' ')}
+            {lesson.focus.length > 0 && (
+              <strong className="ml-2 text-emerald-700">
+                ný: {lesson.focus.map((n) => n.replace(/[0-9]/g, '')).join(' ')}
+              </strong>
+            )}
+          </span>
+        </div>
+
         {/* Level Selector */}
         <div className="flex items-center gap-2">
           <label className="text-sm font-semibold text-gray-700">Stig:</label>

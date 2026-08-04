@@ -104,7 +104,7 @@ describe('NotectorGame — Muscle Memory mode', () => {
 
   it('shows the bar builder and source picker when Muscle Memory is selected', () => {
     render(<NotectorGame />)
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'muscle' } })
+    fireEvent.change(screen.getByRole('combobox', { name: 'Erfiðleikastig' }), { target: { value: 'muscle' } })
     expect(screen.getByText(/Búðu til takt/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Slembinn taktur/i })).toBeInTheDocument()
   })

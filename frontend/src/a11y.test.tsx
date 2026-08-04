@@ -75,7 +75,7 @@ describe('accessibility (axe) — no violations on the main views', () => {
 
   it('Notector (Muscle Memory — shows the bar builder)', async () => {
     const { container } = render(<NotectorGame />);
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'muscle' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Erfiðleikastig' }), { target: { value: 'muscle' } });
     await expectNoAxeViolations(container);
   });
 
