@@ -1,14 +1,16 @@
 import { useMemo, useRef, useState } from 'react';
 import type { CustomBar } from '../../api/customBars';
-import { LESSON_PATH, barFitsLesson } from './lessonPath';
+import { LESSON_PATH, groupBarsByLesson } from './lessonPath';
 
 /**
- * The note-reading path as a tree: each lesson is a node you can select, and the bars you have saved
- * hang underneath the lessons they can actually be played at.
+ * The note-reading path as a tree: each lesson is a node you can select, and your saved exercises hang
+ * underneath the node they belong to.
  *
- * A bar needs no lesson id of its own — `barFitsLesson` decides where it belongs from its notes, so a
- * C/G bar shows under "C og G" and under every later lesson too (those notes stay known), while a bar
- * containing A only appears once A has been introduced.
+ * Placement is `lessonForBar`: the node the exercise was written for, or — for bars saved before the path
+ * existed — the earliest lesson that can play it. Each exercise therefore appears exactly once, which is
+ * what makes the tree an outline of the work rather than a list repeated at every level. (Playability is
+ * a separate matter: an exercise homed at an earlier node is still practisable later, since those notes
+ * stay known.)
  *
  * Keyboard behaviour and ARIA follow ComposerTree: roving tabindex, ↑/↓/Home/End to move, →/← to
  * expand/collapse or step to the parent, Enter/Space activating the focused <button> natively. Wrapper
@@ -21,6 +23,9 @@ type Props = {
   bars: CustomBar[];
   /** Practise a saved bar (the game switches to Muscle Memory and loops it). */
   onSelectBar: (id: number) => void;
+  /** Write a new exercise under this lesson (opens the bar builder bound to it). */
+  onAddExercise: (lessonId: string) => void;
+  onDeleteBar: (id: number) => void;
   selectedBarId: number | 'random';
   /** Locked while a round is running, so practice cannot change under the player. */
   disabled?: boolean;
@@ -36,6 +41,8 @@ export const NotectorTree: React.FC<Props> = ({
   onSelectLesson,
   bars,
   onSelectBar,
+  onAddExercise,
+  onDeleteBar,
   selectedBarId,
   disabled = false,
 }) => {
@@ -48,13 +55,7 @@ export const NotectorTree: React.FC<Props> = ({
   };
   const toggle = (k: string) => setOpen((o) => ({ ...o, [k]: !o[k] }));
 
-  const barsFor = useMemo(() => {
-    const map = new Map<string, CustomBar[]>();
-    for (const node of LESSON_PATH) {
-      map.set(node.id, bars.filter((b) => barFitsLesson(node, b.notes)));
-    }
-    return map;
-  }, [bars]);
+  const barsFor = useMemo(() => groupBarsByLesson(bars), [bars]);
 
   // Flattened list of visible rows — the keyboard model works on this, not on the DOM tree.
   const rows = useMemo(() => {
@@ -68,6 +69,7 @@ export const NotectorTree: React.FC<Props> = ({
           for (const bar of barsFor.get(node.id) ?? []) {
             out.push({ key: `${node.id}:bar:${bar.id}`, level: 2, role: 'leaf' });
           }
+          out.push({ key: `${node.id}:new`, level: 2, role: 'leaf' }); // "ný æfing" row
         }
       }
     }
@@ -162,13 +164,14 @@ export const NotectorTree: React.FC<Props> = ({
                   </div>
                   {open[node.id] && (
                     <ul role="group" className={CHILDREN}>
-                      {nodeBars.length === 0 ? (
+                      {nodeBars.length === 0 && (
                         <li role="none" className="px-2 py-1 text-xs italic text-gray-400">
-                          Engar æfingar með þessum nótum enn
+                          Engin æfing hér enn
                         </li>
-                      ) : (
-                        nodeBars.map((bar) => (
-                          <li role="treeitem" aria-selected={bar.id === selectedBarId} key={bar.id}>
+                      )}
+                      {nodeBars.map((bar) => (
+                        <li role="treeitem" aria-selected={bar.id === selectedBarId} key={bar.id}>
+                          <div className="flex items-center">
                             <button
                               type="button"
                               {...rove(`${node.id}:bar:${bar.id}`)}
@@ -179,9 +182,30 @@ export const NotectorTree: React.FC<Props> = ({
                               🎵 {bar.name}
                               <span className="ml-2 text-xs text-gray-500">{letters(bar.notes)}</span>
                             </button>
-                          </li>
-                        ))
-                      )}
+                            <button
+                              type="button"
+                              onClick={() => bar.id != null && onDeleteBar(bar.id)}
+                              disabled={disabled}
+                              aria-label={`Eyða æfingu ${bar.name}`}
+                              tabIndex={-1}
+                              className="px-2 py-1 text-gray-400 hover:text-red-500 disabled:opacity-40"
+                            >
+                              <span aria-hidden="true">🗑</span>
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                      <li role="treeitem" key="new">
+                        <button
+                          type="button"
+                          {...rove(`${node.id}:new`)}
+                          onClick={() => onAddExercise(node.id)}
+                          disabled={disabled}
+                          className={`${ROW} text-blue-700`}
+                        >
+                          ＋ Ný æfing undir {node.name}
+                        </button>
+                      </li>
                     </ul>
                   )}
                 </li>

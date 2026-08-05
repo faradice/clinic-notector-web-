@@ -2,11 +2,11 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTuner } from '../../hooks/useTuner';
 import { useMetronome } from '../../hooks/useMetronome';
 import { customBarApi, type CustomBar } from '../../api/customBars';
-import { LESSON_PATH, DEFAULT_LESSON_ID, lessonById, buildRound } from './lessonPath';
+import { LESSON_PATH, DEFAULT_LESSON_ID, barFitsLesson, lessonById, buildRound } from './lessonPath';
 import { NotectorTree } from './NotectorTree';
 
-// Basic notes for highest 3 guitar strings practice
-const BASIC_NOTES = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4'];
+// Which notes appear is no longer a single fixed pool — it comes from the lesson on the path
+// (lessonPath.ts). The last node still holds all seven naturals of the highest 3 strings.
 const BAR_LENGTH = 4; // notes per bar shown on the staff
 
 // Difficulty levels
@@ -89,6 +89,10 @@ export const NotectorGame: React.FC = () => {
   const [barSource, setBarSource] = useState<number | 'random'>('random'); // selected bar id, or random
   const [builderNotes, setBuilderNotes] = useState<string[]>([]); // bar being composed
   const [builderName, setBuilderName] = useState('');
+  // Which lesson the bar being composed belongs under — set by "Ný æfing" in the tree, so an exercise
+  // lands on the node you were looking at, and its palette holds only the notes that node has taught.
+  const [builderLessonId, setBuilderLessonId] = useState<string>(DEFAULT_LESSON_ID);
+  const builderNameRef = useRef<HTMLInputElement | null>(null);
 
   const beatTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const matchedRef = useRef(false);
@@ -158,7 +162,11 @@ export const NotectorGame: React.FC = () => {
   const saveBuilderBar = useCallback(async () => {
     if (builderNotes.length === 0 || !builderName.trim()) return;
     try {
-      const created = await customBarApi.create({ name: builderName.trim(), notes: builderNotes });
+      const created = await customBarApi.create({
+        name: builderName.trim(),
+        notes: builderNotes,
+        lessonId: builderLessonId,
+      });
       setBuilderNotes([]);
       setBuilderName('');
       await loadBars();
@@ -166,7 +174,16 @@ export const NotectorGame: React.FC = () => {
     } catch (e) {
       console.error('Failed to save custom bar', e);
     }
-  }, [builderNotes, builderName, loadBars, selectBarSource]);
+  }, [builderNotes, builderName, builderLessonId, loadBars, selectBarSource]);
+
+  /** "Ný æfing undir X" in the tree: practise that lesson and open the builder bound to it. */
+  const startExerciseFor = useCallback((id: string) => {
+    setLessonId(id);
+    setBuilderLessonId(id);
+    setBuilderNotes([]);
+    setLevel('muscle'); // the builder lives in the Muscle Memory panel
+    setTimeout(() => builderNameRef.current?.scrollIntoView({ block: 'center' }), 0);
+  }, []);
 
   const deleteBar = useCallback(async (id: number) => {
     try {
@@ -659,6 +676,8 @@ export const NotectorGame: React.FC = () => {
                   setLevel('muscle');
                   selectBarSource(id);
                 }}
+                onAddExercise={startExerciseFor}
+                onDeleteBar={deleteBar}
               />
             </div>
 
@@ -674,7 +693,9 @@ export const NotectorGame: React.FC = () => {
                     >
                       🎲 Slembinn taktur
                     </button>
-                    {savedBars.map((bar) => (
+                    {/* Only what this lesson can play: a bar using a note the student has not met yet
+                        is not a practice option here (it still lives in the tree under its own node). */}
+                    {savedBars.filter((bar) => barFitsLesson(lesson, bar.notes)).map((bar) => (
                       <span key={bar.id} className={`flex items-center rounded-lg border ${barSource === bar.id ? 'bg-purple-500 text-white border-purple-600' : 'bg-white text-gray-700 border-gray-300'}`}>
                         <button onClick={() => selectBarSource(bar.id!)} className="px-3 py-2 text-sm font-semibold">
                           {bar.name} <span className="opacity-70">({bar.notes.map((n) => n.replace(/[0-9]/g, '')).join(' ')})</span>
@@ -685,16 +706,35 @@ export const NotectorGame: React.FC = () => {
                   </div>
                   <p className="text-sm text-gray-500 mt-2">
                     {barSource === 'random'
-                      ? 'Nýr slembinn 4-nótna taktur er valinn þegar þú byrjar, svo endurtekinn stanslaust.'
+                      ? `Nýr slembinn 4-nótna taktur úr ${lesson.name} er valinn þegar þú byrjar, svo endurtekinn stanslaust.`
                       : 'Þessi vistaði taktur endurtekst stanslaust svo þú getir æft hann inn í vöðvaminnið.'}
                   </p>
                 </div>
 
-                {/* Create a bar */}
+                {/* Create a bar — always as an exercise under one node, so it has a place on the path.
+                    The palette is that node's notes only: an exercise cannot use a note it has not taught. */}
                 <div className="p-4 bg-white rounded-lg border border-gray-300">
-                  <div className="font-semibold text-gray-900 mb-2">Búðu til takt ({BAR_LENGTH} nótur)</div>
+                  <div className="font-semibold text-gray-900 mb-2">
+                    Ný æfing ({BAR_LENGTH} nótur)
+                    <span className="ml-2 font-normal text-sm text-gray-600">
+                      undir{' '}
+                      <select
+                        value={builderLessonId}
+                        onChange={(e) => {
+                          setBuilderLessonId(e.target.value);
+                          setBuilderNotes([]); // the palette changes; a half-built bar may not fit it
+                        }}
+                        aria-label="Undir hvaða þrepi æfingin er"
+                        className="px-2 py-1 border border-gray-300 rounded font-semibold"
+                      >
+                        {LESSON_PATH.map((node) => (
+                          <option key={node.id} value={node.id}>{node.name}</option>
+                        ))}
+                      </select>
+                    </span>
+                  </div>
                   <div className="flex flex-wrap gap-2 mb-3">
-                    {BASIC_NOTES.map((note) => (
+                    {lessonById(builderLessonId).notes.map((note) => (
                       <button
                         key={note}
                         onClick={() => setBuilderNotes((prev) => (prev.length < BAR_LENGTH ? [...prev, note] : prev))}
@@ -716,9 +756,11 @@ export const NotectorGame: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
+                      ref={builderNameRef}
                       value={builderName}
                       onChange={(e) => setBuilderName(e.target.value)}
-                      placeholder="Heiti takts"
+                      placeholder="Heiti æfingar"
+                      aria-label="Heiti æfingar"
                       maxLength={100}
                       className="px-3 py-2 border border-gray-300 rounded-lg text-sm flex-1"
                     />
@@ -727,7 +769,7 @@ export const NotectorGame: React.FC = () => {
                       disabled={builderNotes.length === 0 || !builderName.trim()}
                       className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-lg disabled:opacity-40"
                     >
-                      Vista takt
+                      Vista æfingu
                     </button>
                   </div>
                 </div>

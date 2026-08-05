@@ -54,6 +54,7 @@ public class CustomBarController {
                         .map(String::trim)
                         .filter(s -> !s.isEmpty())
                         .collect(Collectors.toList()))
+                .lessonId(bar.getLessonId())
                 .createdAt(bar.getCreatedAt())
                 .build();
     }
@@ -65,6 +66,9 @@ public class CustomBarController {
                         .map(String::trim)
                         .filter(s -> !s.isEmpty())
                         .collect(Collectors.joining(",")))
+                // Blank and absent mean the same thing here: no node assigned.
+                .lessonId(dto.getLessonId() == null || dto.getLessonId().isBlank()
+                        ? null : dto.getLessonId().trim())
                 .build();
     }
 }

@@ -5,7 +5,10 @@ import {
   barFitsLesson,
   buildRound,
   drawNote,
+  groupBarsByLesson,
+  homeLessonId,
   lessonById,
+  lessonForBar,
 } from './lessonPath';
 
 /** Deterministic rng cycling through the given values. */
@@ -104,6 +107,47 @@ describe('barFitsLesson', () => {
 
   it('rejects an empty bar — there is nothing to practise', () => {
     expect(barFitsLesson(lessonById('plus-a-b'), [])).toBe(false);
+  });
+});
+
+describe('placing exercises on the ladder', () => {
+  it('homes a bar at the earliest lesson that can play it', () => {
+    expect(homeLessonId(['C4', 'G4'])).toBe('c-g');
+    expect(homeLessonId(['C4', 'E4'])).toBe('plus-e');
+    expect(homeLessonId(['F4', 'C4'])).toBe('plus-d-f');
+    expect(homeLessonId(['B4'])).toBe('plus-a-b');
+  });
+
+  it('has no home for a bar no lesson teaches', () => {
+    expect(homeLessonId(['C#4'])).toBeNull();
+    expect(homeLessonId([])).toBeNull();
+  });
+
+  it('keeps an exercise at the node it was written for', () => {
+    // Playable from 'c-g' onward, but written as an "+ A og B" exercise — it stays there.
+    expect(lessonForBar({ notes: ['C4', 'G4'], lessonId: 'plus-a-b' })).toBe('plus-a-b');
+  });
+
+  it('ignores a lesson id that could not actually play the bar', () => {
+    // A stale or hand-set id must not park an A exercise under "C og G".
+    expect(lessonForBar({ notes: ['C4', 'A4'], lessonId: 'c-g' })).toBe('plus-a-b');
+    expect(lessonForBar({ notes: ['C4'], lessonId: 'nope' })).toBe('c-g');
+  });
+
+  it('groups every bar exactly once, and keeps empty lessons in the map', () => {
+    const bars = [
+      { notes: ['C4', 'G4'] },                             // -> c-g
+      { notes: ['C4', 'G4'], lessonId: 'plus-a-b' },        // -> plus-a-b (explicit)
+      { notes: ['E4'] },                                   // -> plus-e
+      { notes: ['C#4'] },                                  // nowhere
+    ];
+    const grouped = groupBarsByLesson(bars);
+    expect([...grouped.keys()]).toEqual(LESSON_PATH.map((n) => n.id));
+    expect(grouped.get('c-g')).toHaveLength(1);
+    expect(grouped.get('plus-e')).toHaveLength(1);
+    expect(grouped.get('plus-d-f')).toHaveLength(0);
+    expect(grouped.get('plus-a-b')).toHaveLength(1);
+    expect([...grouped.values()].flat()).toHaveLength(3); // the sharp bar is placed nowhere, not twice
   });
 });
 

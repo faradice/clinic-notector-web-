@@ -27,6 +27,13 @@ public class CustomBar {
     @Column(nullable = false, length = 500)
     private String notes;
 
+    /**
+     * Which node on the note-reading path this exercise was made for (see lessonPath.ts), or null for
+     * bars saved before the path existed — those are placed by their notes instead.
+     */
+    @Column(name = "lesson_id", length = 64)
+    private String lessonId;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

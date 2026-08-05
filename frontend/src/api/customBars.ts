@@ -4,6 +4,8 @@ export type CustomBar = {
   id?: number;
   name: string;
   notes: string[];
+  /** Node on the note-reading path this exercise was written for (see lessonPath.ts). */
+  lessonId?: string | null;
   createdAt?: string;
 };
 

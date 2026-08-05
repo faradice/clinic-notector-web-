@@ -129,10 +129,36 @@ describe('NotectorGame — the lesson path', () => {
 describe('NotectorGame — Muscle Memory mode', () => {
   afterEach(() => vi.restoreAllMocks())
 
+  /** Note-letter buttons of the builder palette, in order. */
+  const palette = () =>
+    screen.getAllByRole('button').map((b) => b.textContent ?? '').filter((t) => /^[A-G]$/.test(t))
+
   it('shows the bar builder and source picker when Muscle Memory is selected', () => {
     render(<NotectorGame />)
     fireEvent.change(screen.getByRole('combobox', { name: 'Erfiðleikastig' }), { target: { value: 'muscle' } })
-    expect(screen.getByText(/Búðu til takt/i)).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Undir hvaða þrepi æfingin er' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Slembinn taktur/i })).toBeInTheDocument()
+  })
+
+  it('offers only the notes the exercise’s lesson has taught', () => {
+    render(<NotectorGame />)
+    fireEvent.change(screen.getByRole('combobox', { name: 'Erfiðleikastig' }), { target: { value: 'muscle' } })
+    expect(palette()).toEqual(['C', 'G']) // starts on the first lesson
+    fireEvent.change(screen.getByRole('combobox', { name: 'Undir hvaða þrepi æfingin er' }), {
+      target: { value: 'plus-d-f' },
+    })
+    expect(palette()).toEqual(['C', 'D', 'E', 'F', 'G'])
+  })
+
+  it('"Ný æfing" in the tree binds the builder to that lesson', () => {
+    render(<NotectorGame />)
+    // Only the lesson being practised starts expanded, so open "+ E" first.
+    fireEvent.click(screen.getByRole('button', { name: 'Opna + E' }))
+    fireEvent.click(screen.getByRole('button', { name: /Ný æfing undir \+ E/ }))
+    // The builder opened (Muscle Memory panel) bound to that node, and practice moved there too.
+    expect(screen.getByRole('combobox', { name: 'Undir hvaða þrepi æfingin er' })).toHaveValue('plus-e')
+    expect(screen.getByRole('combobox', { name: 'Erfiðleikastig' })).toHaveValue('muscle')
+    expect(screen.getByRole('combobox', { name: 'Hvaða nótur á að æfa' })).toHaveValue('plus-e')
+    expect(palette()).toEqual(['C', 'E', 'G'])
   })
 })

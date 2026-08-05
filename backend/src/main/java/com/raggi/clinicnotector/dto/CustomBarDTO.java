@@ -16,5 +16,7 @@ public class CustomBarDTO {
     private Long id;
     private String name;
     private List<String> notes;
+    /** Node on the note-reading path this exercise belongs to; null = unassigned. */
+    private String lessonId;
     private LocalDateTime createdAt;
 }

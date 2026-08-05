@@ -91,6 +91,47 @@ export function barFitsLesson(node: LessonNode, barNotes: string[]): boolean {
 }
 
 /**
+ * The earliest lesson at which a bar becomes playable — its natural home on the ladder.
+ * Null when no lesson covers it (e.g. a bar with a sharp, or an empty bar).
+ */
+export function homeLessonId(barNotes: string[]): string | null {
+  return LESSON_PATH.find((n) => barFitsLesson(n, barNotes))?.id ?? null;
+}
+
+export type PlaceableBar = { notes: string[]; lessonId?: string | null };
+
+/**
+ * Which node an exercise hangs under in the tree.
+ *
+ * An explicit `lessonId` wins — that is the node it was written for, so a C/G bar deliberately made as
+ * an "+ A og B" exercise stays there. Without one (every bar saved before the path existed) we fall back
+ * to `homeLessonId`, the earliest lesson that can play it.
+ *
+ * An explicit id is ignored if the bar's notes are not all taught by then; otherwise a stale or hand-set
+ * id could park an A-natural exercise under "C og G", which is exactly what the ladder is there to prevent.
+ */
+export function lessonForBar(bar: PlaceableBar): string | null {
+  if (bar.lessonId) {
+    const node = LESSON_PATH.find((n) => n.id === bar.lessonId);
+    if (node && barFitsLesson(node, bar.notes)) return node.id;
+  }
+  return homeLessonId(bar.notes);
+}
+
+/**
+ * Group exercises by the node they hang under. Every lesson gets an entry (possibly empty) and every bar
+ * appears at most once — bars no lesson can place are left out.
+ */
+export function groupBarsByLesson<T extends PlaceableBar>(bars: T[]): Map<string, T[]> {
+  const map = new Map<string, T[]>(LESSON_PATH.map((n) => [n.id, []]));
+  for (const bar of bars) {
+    const id = lessonForBar(bar);
+    if (id) map.get(id)!.push(bar);
+  }
+  return map;
+}
+
+/**
  * Build a round of `count` notes for a lesson.
  *
  * `carryOver` are notes missed in the previous round that should come back; they are kept only if the
