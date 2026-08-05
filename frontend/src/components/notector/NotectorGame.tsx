@@ -23,38 +23,38 @@ interface LevelConfig {
 const LEVELS: Record<DifficultyLevel, LevelConfig> = {
   muscle: {
     name: 'Vöðvaminni',
-    description: 'Einn taktur, endurtekinn stanslaust',
+    description: 'Einn taktur (4 nótur) endurtekinn stanslaust, sami hver umferð',
     noteCount: 4,
     repeatUntilPerfect: false,
     fixedBar: true,
   },
   beginner: {
     name: 'Byrjandi',
-    description: 'Sömu 4 nótur þar til allt er rétt',
+    description: '4 nótur, sama umferð aftur og aftur þar til hún er öll rétt',
     noteCount: 4,
     repeatUntilPerfect: true,
   },
   elementary: {
     name: 'Grunnstig',
-    description: '4 nótur, rangar nótur endurteknar',
+    description: '4 nótur, ný umferð hverju sinni; nótur sem klikkuðu koma aftur',
     noteCount: 4,
     repeatUntilPerfect: false,
   },
   intermediate: {
     name: 'Miðstig',
-    description: '8 nótur, hraðari',
+    description: '8 nótur í umferð, ný hverju sinni',
     noteCount: 8,
     repeatUntilPerfect: false,
   },
   advanced: {
     name: 'Framhaldsstig',
-    description: '12 nótur, allt sviðið',
+    description: '12 nótur í umferð — löng samfelld lesning',
     noteCount: 12,
     repeatUntilPerfect: false,
   },
   expert: {
     name: 'Meistarastig',
-    description: '16 nótur, áskorun',
+    description: '16 nótur í umferð — mest á einu bretti',
     noteCount: 16,
     repeatUntilPerfect: false,
   },
@@ -686,7 +686,14 @@ export const NotectorGame: React.FC = () => {
                 obvious thing to click, so they ARE the chooser now — a radiogroup, and still the same
                 `level` the toolbar drives. */}
             <div className="max-w-2xl mx-auto text-left mb-8">
-              <div className="font-semibold text-gray-900 mb-2">Hvernig viltu æfa?</div>
+              <div className="font-semibold text-gray-900">Hvernig viltu æfa?</div>
+              {/* The levels used to claim things they no longer decide ("allt sviðið", "hraðari"): the
+                  lesson picked above owns WHICH notes appear, and tempo is the toolbar's Tempo slider.
+                  A level only sets how many notes a round has and how the round repeats. */}
+              <p className="text-sm text-gray-600 mb-3">
+                Þrepið hér fyrir ofan ræður hvaða nótur koma. Hér velurðu hversu margar eru í hverri
+                umferð og hvernig þær endurtaka sig — hraðann stillir þú með Tempo í tólastikunni.
+              </p>
               <div className="space-y-3" role="radiogroup" aria-label="Hvernig viltu æfa">
                 {Object.entries(LEVELS).map(([key, config]) => {
                   const isCurrent = key === level;
