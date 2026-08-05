@@ -141,6 +141,17 @@ describe('NotectorGame — Muscle Memory mode', () => {
   const palette = () =>
     screen.getAllByRole('button').map((b) => b.textContent ?? '').filter((t) => /^[A-G]$/.test(t))
 
+  it('picks the level by clicking its box on the idle screen', () => {
+    render(<NotectorGame />)
+    const box = screen.getByRole('radio', { name: /Vöðvaminni/ })
+    expect(box).toHaveAttribute('aria-checked', 'false')
+    fireEvent.click(box)
+    expect(box).toHaveAttribute('aria-checked', 'true')
+    // Same state the toolbar drives, and the Muscle Memory panel appeared.
+    expect(screen.getByRole('combobox', { name: 'Erfiðleikastig' })).toHaveValue('muscle')
+    expect(screen.getByRole('button', { name: /Slembinn taktur/i })).toBeInTheDocument()
+  })
+
   it('shows the bar builder and source picker when Muscle Memory is selected', () => {
     render(<NotectorGame />)
     fireEvent.change(screen.getByRole('combobox', { name: 'Erfiðleikastig' }), { target: { value: 'muscle' } })

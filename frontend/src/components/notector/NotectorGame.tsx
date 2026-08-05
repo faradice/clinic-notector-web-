@@ -681,7 +681,40 @@ export const NotectorGame: React.FC = () => {
               />
             </div>
 
-            {level === 'muscle' ? (
+            {/* How to practise. These boxes used to be plain <div>s describing the levels, so clicking
+                one did nothing and the only way to change level was the toolbar select. They are the
+                obvious thing to click, so they ARE the chooser now — a radiogroup, and still the same
+                `level` the toolbar drives. */}
+            <div className="max-w-2xl mx-auto text-left mb-8">
+              <div className="font-semibold text-gray-900 mb-2">Hvernig viltu æfa?</div>
+              <div className="space-y-3" role="radiogroup" aria-label="Hvernig viltu æfa">
+                {Object.entries(LEVELS).map(([key, config]) => {
+                  const isCurrent = key === level;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      role="radio"
+                      aria-checked={isCurrent}
+                      onClick={() => setLevel(key as DifficultyLevel)}
+                      className={`block w-full text-left p-4 rounded-lg border transition-colors ${
+                        isCurrent
+                          ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400'
+                          : 'bg-white border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className={`font-semibold ${isCurrent ? 'text-emerald-900' : 'text-gray-900'}`}>
+                        {config.name}
+                        {isCurrent && <span className="ml-2 text-sm font-normal">✓ valið</span>}
+                      </div>
+                      <div className="text-gray-600">{config.description}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {level === 'muscle' && (
               <div className="max-w-2xl mx-auto text-left space-y-5">
                 {/* Which bar to loop */}
                 <div className="p-4 bg-white rounded-lg border border-gray-300">
@@ -773,15 +806,6 @@ export const NotectorGame: React.FC = () => {
                     </button>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-3 text-left max-w-2xl mx-auto">
-                {Object.entries(LEVELS).map(([key, config]) => (
-                  <div key={key} className="p-4 bg-white rounded-lg border border-gray-300">
-                    <div className="font-semibold text-gray-900">{config.name}</div>
-                    <div className="text-gray-600">{config.description}</div>
-                  </div>
-                ))}
               </div>
             )}
           </div>
