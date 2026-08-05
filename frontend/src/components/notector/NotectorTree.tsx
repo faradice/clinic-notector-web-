@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CustomBar } from '../../api/customBars';
 import { LESSON_PATH, groupBarsByLesson } from './lessonPath';
 
@@ -48,6 +48,12 @@ export const NotectorTree: React.FC<Props> = ({
 }) => {
   // The lesson being practised starts expanded so its exercises are visible without hunting.
   const [open, setOpen] = useState<Record<string, boolean>>({ path: true, [lessonId]: true });
+  // ...and every later switch of lesson expands the new one too — the useState initialiser above only
+  // runs on mount, so without this you had to click ▸ after changing step. Collapsing it by hand still
+  // works; it just reopens the next time the selection lands on it.
+  useEffect(() => {
+    setOpen((o) => (o[lessonId] ? o : { ...o, path: true, [lessonId]: true }));
+  }, [lessonId]);
   const [active, setActive] = useState('path');
   const rowRefs = useRef(new Map<string, HTMLButtonElement | null>());
   const reg = (k: string) => (el: HTMLButtonElement | null) => {

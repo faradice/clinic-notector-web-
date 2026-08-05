@@ -124,6 +124,14 @@ describe('NotectorGame — the lesson path', () => {
     expect(picker).toHaveValue('plus-d-f')
     expect(lessonRow(/^\+ D og F/)).toHaveAttribute('aria-selected', 'true')
   })
+
+  it('expands whichever lesson is selected, without a second click on ▸', () => {
+    render(<NotectorGame />)
+    // "+ D og F" is collapsed on mount; selecting it must reveal its contents.
+    expect(screen.queryByRole('button', { name: /Ný æfing undir \+ D og F/ })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /^\+ D og F/ }))
+    expect(screen.getByRole('button', { name: /Ný æfing undir \+ D og F/ })).toBeInTheDocument()
+  })
 })
 
 describe('NotectorGame — Muscle Memory mode', () => {
