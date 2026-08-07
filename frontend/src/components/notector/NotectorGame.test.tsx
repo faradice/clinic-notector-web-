@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { NotectorGame } from './NotectorGame'
 
 // The game's audio hooks need a microphone / AudioContext, neither of which
@@ -84,6 +84,21 @@ describe('NotectorGame — Pick mode', () => {
     fireEvent.click(screen.getByRole('button', { name: /nöfn/i })) // reveal letters to count them
     expect(screen.getAllByText('C')).toHaveLength(16)
     expect(screen.getAllByText(/^Taktur \d$/)).toHaveLength(4) // 16 notes / 4 per bar
+  })
+
+  it('plays every note of the round, not just the first bar', () => {
+    render(<NotectorGame />)
+    fireEvent.change(screen.getByRole('combobox', { name: 'Erfiðleikastig' }), { target: { value: 'expert' } })
+    startInPickMode()
+    const beat = (60 / 30) * 1000 // default tempo: 30 bpm = one note per 2s
+
+    // The beat chain used to stop at 4 regardless of level, rolling the round over after one bar.
+    act(() => { vi.advanceTimersByTime(beat * 6) })
+    expect(screen.getByTestId('round')).toHaveTextContent('1')
+
+    // All 16 beats: now the round rolls over.
+    act(() => { vi.advanceTimersByTime(beat * 11) })
+    expect(screen.getByTestId('round')).toHaveTextContent('2')
   })
 
   it('uses one bar for a four-note round', () => {

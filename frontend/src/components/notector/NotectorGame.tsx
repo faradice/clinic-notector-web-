@@ -249,8 +249,8 @@ export const NotectorGame: React.FC = () => {
       i === 0 ? { ...n, status: 'active' } : n
     ));
 
-    // Schedule beat progression
-    scheduleBeat(0);
+    // Schedule beat progression over the round we just generated
+    scheduleBeat(0, newNotes.length);
   }, [generateNotes, levelConfig, barSource]);
 
   const startNextRound = useCallback(() => {
@@ -258,18 +258,19 @@ export const NotectorGame: React.FC = () => {
     const roundNotes = notesRef.current;
     const allCorrect = roundNotes.length > 0 && roundNotes.every(n => n.status === 'correct');
 
+    let newNotes: NoteState[];
     if (levelConfig.fixedBar) {
       // Muscle Memory: always replay the exact same bar, non-stop
-      const newNotes = generateNotes(true);
+      newNotes = generateNotes(true);
       setNotes(newNotes);
     } else if (levelConfig.repeatUntilPerfect && !allCorrect) {
       // Beginner mode: keep the exact same bar until every note is correct
-      const newNotes = generateNotes(true);
+      newNotes = generateNotes(true);
       setNotes(newNotes);
       setIsRepeatingBar(true);
     } else {
       // Perfect round (or non-beginner level): move on to a new pattern
-      const newNotes = generateNotes(false);
+      newNotes = generateNotes(false);
       setNotes(newNotes);
       setFailedNotes([]); // Clear failed notes after using them
       setIsRepeatingBar(false);
@@ -285,12 +286,22 @@ export const NotectorGame: React.FC = () => {
       i === 0 ? { ...n, status: 'active' } : n
     ));
 
-    // Schedule beat progression
-    scheduleBeat(0);
+    // Schedule beat progression over the round we just generated
+    scheduleBeat(0, newNotes.length);
   }, [levelConfig, generateNotes]);
 
-  const scheduleBeat = (noteIndex: number) => {
-    const displayCount = Math.min(levelConfig.noteCount, 4); // Show max 4 bars at once
+  /**
+   * Walk the beat chain over a round of `count` notes.
+   *
+   * `count` is passed in from the caller's freshly generated array rather than read from state:
+   * this chain runs on setTimeout callbacks that close over stale renders, and notesRef only
+   * catches up after the commit (the same gotcha behind the beat-status bugs).
+   *
+   * It used to be `Math.min(levelConfig.noteCount, 4)`, the display cap — so every level ended
+   * after four beats and Miðstig/Framhaldsstig/Meistarastig never played past their first bar.
+   */
+  const scheduleBeat = (noteIndex: number, count: number) => {
+    const displayCount = count;
 
     if (noteIndex >= displayCount) {
       // Round complete
@@ -325,7 +336,7 @@ export const NotectorGame: React.FC = () => {
         setNotes(prev => prev.map((n, i) =>
           i === nextIndex ? { ...n, status: 'active' } : n
         ));
-        scheduleBeat(nextIndex);
+        scheduleBeat(nextIndex, count);
       } else {
         finishRound();
       }
@@ -592,7 +603,7 @@ export const NotectorGame: React.FC = () => {
         <div className="flex items-center gap-4" role="status" aria-live="polite">
           <div className="text-sm">
             <span className="font-semibold text-gray-700">Umferð:</span>
-            <span className="ml-2 text-lg font-bold text-blue-600">{roundNumber}</span>
+            <span data-testid="round" className="ml-2 text-lg font-bold text-blue-600">{roundNumber}</span>
           </div>
           <div className="text-sm">
             <span className="font-semibold text-gray-700">Skor:</span>
