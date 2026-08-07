@@ -75,6 +75,23 @@ describe('NotectorGame — Pick mode', () => {
     expect(screen.getByTestId('score')).toHaveTextContent('0')
   })
 
+  it('draws the whole round, four notes to a bar', () => {
+    render(<NotectorGame />)
+    // Meistarastig = 16 notes. The staff used to slice to 4, so notes 5–16 were never drawn
+    // and the active marker walked off the end of what you could see.
+    fireEvent.change(screen.getByRole('combobox', { name: 'Erfiðleikastig' }), { target: { value: 'expert' } })
+    startInPickMode()
+    fireEvent.click(screen.getByRole('button', { name: /nöfn/i })) // reveal letters to count them
+    expect(screen.getAllByText('C')).toHaveLength(16)
+    expect(screen.getAllByText(/^Taktur \d$/)).toHaveLength(4) // 16 notes / 4 per bar
+  })
+
+  it('uses one bar for a four-note round', () => {
+    render(<NotectorGame />)
+    startInPickMode() // Byrjandi = 4 notes
+    expect(screen.getAllByText(/^Taktur \d$/)).toHaveLength(1)
+  })
+
   it('Names toggle shows/hides every note letter, even while playing', () => {
     render(<NotectorGame />)
     startInPickMode() // 4 notes, all C4 (Math.random -> 0); names off => none shown

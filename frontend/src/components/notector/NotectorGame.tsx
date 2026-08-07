@@ -217,12 +217,13 @@ export const NotectorGame: React.FC = () => {
       }
     }
 
-    // Create note states (only showing first 4 in display)
     notesToUse.forEach((note, index) => {
       newNotes.push({
         note,
         status: 'pending',
-        barIndex: index % 4, // Distribute across 4 bars
+        // Four notes to a bar (4/4). This was `index % 4`, which numbered the notes within a
+        // bar rather than saying which bar they were in.
+        barIndex: Math.floor(index / BAR_LENGTH),
       });
     });
 
@@ -431,7 +432,18 @@ export const NotectorGame: React.FC = () => {
     };
   }, []);
 
-  const displayNotes = notes.slice(0, 4); // Always show max 4 bars
+  // The staff shows the WHOLE round. It used to be `notes.slice(0, 4)` with one note per "Taktur",
+  // so every level above 4 notes (Miðstig 8, Framhaldsstig 12, Meistarastig 16) drew only the first
+  // four and the active marker walked off the end — you were reading blind from note 5.
+  // Layout is proper 4/4: four notes to a bar, as many bars as the round needs, sharing the width.
+  const displayNotes = notes;
+  const STAFF_X0 = 160; // where bar 1 starts (right of the clef)
+  const STAFF_X1 = 1160; // right edge of the staff
+  const barCount = Math.max(1, Math.ceil(displayNotes.length / BAR_LENGTH));
+  const barWidth = (STAFF_X1 - STAFF_X0) / barCount;
+  const barX = (bar: number) => STAFF_X0 + bar * barWidth;
+  const noteX = (index: number) =>
+    barX(Math.floor(index / BAR_LENGTH)) + (barWidth * ((index % BAR_LENGTH) + 0.5)) / BAR_LENGTH;
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
@@ -848,23 +860,39 @@ export const NotectorGame: React.FC = () => {
                 𝄞
               </text>
 
-              {/* Bar lines */}
-              {[0, 1, 2, 3, 4].map((barIndex) => (
+              {/* Bar lines — one per bar the round actually needs, plus the closing double-weight line */}
+              {Array.from({ length: barCount + 1 }, (_, bar) => (
                 <line
-                  key={`bar-${barIndex}`}
-                  x1={160 + barIndex * 250}
+                  key={`bar-${bar}`}
+                  x1={barX(bar)}
                   y1={100}
-                  x2={160 + barIndex * 250}
+                  x2={barX(bar)}
                   y2={220}
                   stroke="#000"
-                  strokeWidth={barIndex === 4 ? 4 : 2}
+                  strokeWidth={bar === barCount ? 4 : 2}
                 />
+              ))}
+
+              {/* Bar numbers, centred over each bar (they used to sit over every single note) */}
+              {Array.from({ length: barCount }, (_, bar) => (
+                <text
+                  key={`barlabel-${bar}`}
+                  x={barX(bar) + barWidth / 2}
+                  y={64}
+                  textAnchor="middle"
+                  fontSize="16"
+                  fill="#475569"
+                >
+                  Taktur {bar + 1}
+                </text>
               ))}
 
               {/* Notes */}
               {displayNotes.map((noteState, index) => {
-                const x = 285 + index * 250;
+                const x = noteX(index);
                 const noteY = getNoteY(noteState.note);
+                // Ledger lines and note names shrink with the bar so 16 notes don't collide.
+                const half = Math.min(25, barWidth / BAR_LENGTH / 2.6);
 
                 let fill = '#666';
                 let stroke = '#333';
@@ -900,9 +928,9 @@ export const NotectorGame: React.FC = () => {
                     {needsLedgerLines.map((y) => (
                       <line
                         key={`ledger-${index}-${y}`}
-                        x1={x - 25}
+                        x1={x - half}
                         y1={y}
-                        x2={x + 25}
+                        x2={x + half}
                         y2={y}
                         stroke="#000"
                         strokeWidth={2}
@@ -936,22 +964,13 @@ export const NotectorGame: React.FC = () => {
                         x={x}
                         y={288}
                         textAnchor="middle"
-                        fontSize="26"
+                        fontSize={barCount > 2 ? 20 : 26}
                         fontWeight="bold"
                         fill={stroke}
                       >
                         {noteState.note.replace(/[0-9]/g, '')}
                       </text>
                     )}
-                    <text
-                      x={x}
-                      y={64}
-                      textAnchor="middle"
-                      fontSize="16"
-                      fill="#475569"
-                    >
-                      Taktur {index + 1}
-                    </text>
                   </g>
                 );
               })}
